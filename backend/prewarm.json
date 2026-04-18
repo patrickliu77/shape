@@ -1,0 +1,165 @@
+{
+  "_comment": "Hand-curated demo answers — short-circuits the LLM when a question matches all listed keywords. Tone: warm, casual, friend-explaining-to-friend.",
+  "limit": {
+    "en": [
+      {
+        "all": ["epsilon", "small"],
+        "answer": "Pick literally any tiny window around L — even a hairline thin one. There's always a matching delta-window around a so that anything you put in, ends up inside that yellow strip. The two bands shrink together. That's the whole game."
+      },
+      {
+        "all": ["why", "approach"],
+        "answer": "Because the curve doesn't jump near a — it changes smoothly. So the closer x gets to a, the more the function is forced to hug L. The epsilon-delta game just makes 'closer and closer' precise."
+      }
+    ],
+    "ar": [
+      {
+        "all": ["نهاية"],
+        "answer": "اختار أي شباك صغير حوالين L، حتى لو رفيع جدًا. هتلاقي دلتا حوالين a أي قيمة x جوّاها هتدخل الشباك ده. الاتنين بيرفعوا مع بعض. ده معنى \"بتقرّب من L\"."
+      }
+    ]
+  },
+  "derivative": {
+    "en": [
+      {
+        "all": ["secant", "tangent"],
+        "answer": "Two points on the curve, h apart. As h shrinks, those points slide together and the line through them rotates — at the moment they touch, you've got the tangent. Its slope is $f'(a)$."
+      },
+      {
+        "all": ["h", "zero"],
+        "answer": "You can't actually plug in $h=0$ — that's a divide-by-zero. But you can ask what the slope's heading toward as h gets tiny. That limit is the derivative — the slope of the line that just kisses the curve at a."
+      }
+    ],
+    "ar": [
+      {
+        "all": ["مماس"],
+        "answer": "نقطتين على المنحنى، بينهم h. لما h يصغّر، النقطتين بيتلاقوا والخط اللي بينهم بيلفّ. ساعة ما يتلامسوا، بقى عندك المماس. ميله هو $f'(a)$."
+      }
+    ]
+  },
+  "exponential": {
+    "en": [
+      {
+        "all": ["a", "control"],
+        "answer": "$a$ is basically the growth speed. Positive $a$ means the curve takes off — bigger $a$, faster takeoff. Negative $a$, it dies off toward zero. Zero $a$, it just sits at 1. One slider, infinite curves."
+      }
+    ]
+  },
+  "chain-rule": {
+    "en": [
+      {
+        "all": ["why", "multiply"],
+        "answer": "Each function stretches its input by its own derivative. The inner one stretches by $g'(x)$, then the outer one stretches that result by $f'(g(x))$. Two stretches in a row = multiply. That's literally the chain rule."
+      }
+    ]
+  },
+  "de-moivre": {
+    "en": [
+      {
+        "all": ["why", "angle"],
+        "answer": "Because multiplying two unit complex numbers adds their angles — that's just how the unit circle works. So squaring doubles the angle, cubing triples it, $n$-th power multiplies by $n$. The wave on screen is $\\cos(n\\theta)$ — the real part of $e^{in\\theta}$ — and it crams more cycles in as $n$ grows."
+      }
+    ],
+    "ar": [
+      {
+        "all": ["زاوية"],
+        "answer": "لأن ضرب عددين مركّبين على الدايرة الواحدة بيجمع الزاويتين بتوعهم — دي طبيعة الدايرة. فالتربيع بيضاعف الزاوية، التكعيب بيضربها في 3، الأُس n بيضربها في n. الموجة اللي قدامك هي cos(nθ)، وكل ما n يكبر بتلاقيها بتعمل دورات أكتر في نفس المسافة."
+      }
+    ]
+  },
+  "double-integral": {
+    "en": [
+      {
+        "all": ["prism"],
+        "answer": "Each prism is a tiny box: its base is one cell of the grid (area $\\Delta x\\,\\Delta y$), and its height is $f(x_i, y_j)$ at some point inside the cell. So one prism's volume is $f(x_i, y_j)\\,\\Delta x\\,\\Delta y$ — the formula sums those over every cell."
+      },
+      {
+        "all": ["limit"],
+        "answer": "As $\\Delta \\to 0$ the prisms get thinner and more numerous, hugging the surface from below and above more tightly. The total volume locks onto a single number — that's the double integral. No matter how you pick the sample point inside each cell, you get the same answer in the limit (that's what 'integrable' means)."
+      },
+      {
+        "all": ["double", "integral"],
+        "answer": "It's the volume trapped between the surface $z = f(x,y)$ and the region $R$ in the xy-plane. We approximate it by stacking prisms over a grid; the limit as the grid shrinks is the integral itself."
+      }
+    ],
+    "ar": [
+      {
+        "all": ["منشور"],
+        "answer": "كل منشور صندوق صغير: قاعدته خلية من الشبكة (مساحتها $\\Delta x\\,\\Delta y$)، وارتفاعه $f(x_i, y_j)$ عند نقطة جوّاها. يعني حجم المنشور الواحد $f(x_i, y_j)\\,\\Delta x\\,\\Delta y$ — والصيغة بتجمع ده على كل الخلايا."
+      },
+      {
+        "all": ["نهاية"],
+        "answer": "كل ما $\\Delta$ تصغّر، المناشير بتبقى أرفع وأكتر، وبتقرّب من السطح من فوق ومن تحت. المجموع بيقفل على رقم واحد — ده هو التكامل المزدوج. مش مهم تختار نقطة العيّنة جوّه الخلية فين، النهاية واحدة."
+      }
+    ]
+  },
+  "gaussian-integral": {
+    "en": [
+      {
+        "all": ["why", "square"],
+        "answer": "Because $e^{-x^2}$ has no elementary antiderivative — there's no closed-form $F(x)$ to plug into the fundamental theorem. Squaring turns the 1D problem into a 2D one over the whole plane, where polar coordinates make it solvable. It's a classic 'leave the building you're stuck in' move."
+      },
+      {
+        "all": ["polar"],
+        "answer": "In Cartesian the integrand $e^{-(x^2+y^2)}$ has no nice antiderivative, but in polar coordinates the area element is $r\\,dr\\,d\\theta$ — that extra $r$ is exactly what's needed to make $r e^{-r^2}$ an easy integral (its antiderivative is $-\\tfrac{1}{2} e^{-r^2}$)."
+      },
+      {
+        "all": ["sqrt"],
+        "answer": "We compute $I^2 = \\pi$, not $I$ directly. So $I$ is whatever positive number squares to $\\pi$ — that's $\\sqrt{\\pi}$. The square root is the price of the squaring trick we used to get the integral solvable in the first place."
+      },
+      {
+        "all": ["jacobian"],
+        "answer": "When you change variables from $(x,y)$ to $(r,\\theta)$, the area element transforms by the Jacobian determinant: $dx\\,dy = r\\,dr\\,d\\theta$. That extra $r$ is the geometric stretch factor — a thin polar wedge gets wider as $r$ grows. Without it, you'd get the wrong area."
+      }
+    ],
+    "ar": [
+      {
+        "all": ["تربيع"],
+        "answer": "لأن $e^{-x^2}$ مفيش له مشتقة عكسية بالشكل المعتاد — مفيش $F(x)$ نقدر نعوّض فيها. التربيع بيحوّل المسألة من بُعد واحد لاتنين على المستوي كله، وهناك الإحداثيات القطبية بتحلّها. حركة كلاسيكية: لو علقت في مسألة، خرّجها لفضاء أكبر."
+      },
+      {
+        "all": ["قطبية"],
+        "answer": "في الإحداثيات الديكارتية $e^{-(x^2+y^2)}$ صعب، بس في القطبية عنصر المساحة بيبقى $r\\,dr\\,d\\theta$ — الـ $r$ الزيادة دي بالظبط اللي بتخلّي $r e^{-r^2}$ سهل (مشتقتها العكسية $-\\tfrac{1}{2} e^{-r^2}$)."
+      }
+    ]
+  },
+  "saddle": {
+    "en": [
+      {
+        "all": ["saddle"],
+        "answer": "A saddle point is a critical point that's a min in one direction and a max in another — like the seat of a horse saddle. For $z = ax^2 + by^2$ that happens whenever $a$ and $b$ have opposite signs. Spin the surface in 3D and you'll see it goes up along one axis and down along the other."
+      },
+      {
+        "all": ["bowl"],
+        "answer": "A bowl appears when both $a$ and $b$ are positive — the surface curves up no matter which way you walk away from the origin, so $(0, 0)$ is a local minimum. Flip both signs and you get an upside-down dome (a maximum)."
+      },
+      {
+        "all": ["critical"],
+        "answer": "The gradient $\\nabla z = (2ax, 2by)$ vanishes only at the origin, so $(0, 0)$ is the lone critical point. The Hessian's signs (which match $a$ and $b$) classify it: both positive → minimum, both negative → maximum, opposite signs → saddle."
+      }
+    ],
+    "ar": [
+      {
+        "all": ["سرج"],
+        "answer": "نقطة السرج هي نقطة حرجة شكلها زي سرج الحصان: تطلع في اتجاه وتنزل في الاتجاه التاني. في $z = a x^2 + b y^2$ ده بيحصل لما a و b يبقوا إشارتهم مختلفة. لفّ السطح في الـ 3D وانت هتشوف بنفسك."
+      }
+    ]
+  },
+  "determinant": {
+    "en": [
+      {
+        "all": ["area"],
+        "answer": "Take the two columns of the matrix as vectors and draw the parallelogram they span. The determinant is the (signed) area of that parallelogram. Negative means the matrix flipped orientation; zero means the parallelogram collapsed to a line."
+      },
+      {
+        "all": ["zero"],
+        "answer": "When $\\det = 0$, the two columns are parallel — they no longer span a 2D parallelogram, just a line. The matrix has squashed the plane onto a line, and you can't undo that, which is why a zero-determinant matrix isn't invertible."
+      }
+    ],
+    "ar": [
+      {
+        "all": ["مساحة"],
+        "answer": "خد عمودين المصفوفة كأنهم متجهين وارسم متوازي الأضلاع اللي بينهم. المحدد هو مساحة متوازي الأضلاع ده (بالإشارة). لو سالب يبقى المصفوفة قلبت الاتجاه، ولو صفر يبقى المتوازي وقع على خط واحد."
+      }
+    ]
+  }
+}
