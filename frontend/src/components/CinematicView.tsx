@@ -3,6 +3,8 @@ import type { CinematicSpec } from "../types";
 import { stop as stopGlobalPlayer } from "../lib/player";
 import { fetchTTS } from "../lib/tts";
 import { useLang } from "../lib/lang";
+import { WallClockControls } from "./WallClockControls";
+import { videoSpeedFor } from "../lib/video-speed";
 import { useT } from "../lib/translate";
 import { randomQuote, type Quote } from "../lib/quotes";
 import { MathText } from "../lib/math-text";
@@ -30,7 +32,7 @@ const STR = {
 
 // Total fake "generation" time. The actual video is preloaded; this gives
 // the demo a real-feeling generation moment and time to read a quote.
-const GEN_DURATION_MS = 10_000;
+const GEN_DURATION_MS = 1_000;
 
 const VOLUME_KEY = "shape.cinemaVolume";
 
@@ -239,8 +241,16 @@ export function CinematicView({ spec, transcript }: Props) {
     if (!v || !a || !audioUrl) return;
 
     const adjustRate = () => {
-      // Keep narration at 1.0× — slow the *video* so it lasts as long as the
-      // audio does. If audio is shorter than video, leave video at 1.0×.
+      // If this video has an explicit speed override (see lib/video-speed),
+      // run BOTH the video and the narration at that rate — no auto-adjust.
+      const override = videoSpeedFor(spec.video);
+      if (override !== 1) {
+        v.playbackRate = override;
+        a.playbackRate = override;
+        return;
+      }
+      // Default: keep narration at 1.0× and slow the *video* so it lasts as
+      // long as the audio. If audio is shorter than video, leave video at 1.0×.
       a.playbackRate = 1.0;
       if (
         a.duration > 0 &&
@@ -434,15 +444,27 @@ export function CinematicView({ spec, transcript }: Props) {
               </div>
             </div>
           ) : (
-            <video
-              ref={videoRef}
-              src={spec.video}
-              className="w-full h-full object-contain"
-              controls
-              playsInline
-              autoPlay
-              onError={() => setVideoMissing(true)}
-            />
+            <>
+              <video
+                ref={videoRef}
+                src={spec.video}
+                className="w-full h-full object-contain"
+                playsInline
+                autoPlay
+                onError={() => setVideoMissing(true)}
+                onClick={() => {
+                  const v = videoRef.current;
+                  if (!v) return;
+                  if (v.paused || v.ended) v.play().catch(() => {});
+                  else v.pause();
+                }}
+              />
+              {/* Custom controls — wall-clock time, accurate even when the
+                  player slows the video to match a longer narration. The
+                  native controls were ticking in media-time, so each
+                  visible "second" was longer than a real second. */}
+              <WallClockControls videoRef={videoRef} />
+            </>
           )}
         </div>
       )}

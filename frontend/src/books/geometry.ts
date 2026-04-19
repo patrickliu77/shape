@@ -57,7 +57,7 @@ export const GEOMETRY_THEOREMS: Theorem[] = [
       "Cut a circle into many thin pie wedges and rearrange them. They straighten out into a rectangle whose long side is half the circumference and whose short side is the radius.",
     cinematic: { video: "/cache/videos/geom_05_area_circle.mp4" },
     transcript: {
-      en: "Here is the trick for the area of a circle. Cut the circle into a lot of thin pie wedges. Now flip every other wedge upside down and line them up like teeth in a zipper. The shape you get looks more and more like a rectangle as the wedges get thinner. Its long side is half of the circumference, which is pi times the radius. Its short side is just the radius. Multiply: pi times the radius times the radius. That is pi r squared — the area of the circle.",
+      en: "Cut a circle into thin wedges. Flip every other one and line them up — they form a near-rectangle. Its long side is half the circumference, pi r. Its short side is r. Multiply: pi r squared. That's the area.",
     },
   },
   {

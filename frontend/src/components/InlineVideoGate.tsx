@@ -3,6 +3,7 @@ import { useLang } from "../lib/lang";
 import { useT } from "../lib/translate";
 import { randomQuote, type Quote } from "../lib/quotes";
 import { MathText } from "../lib/math-text";
+import { videoSpeedFor } from "../lib/video-speed";
 
 type Props = { videoUrl: string };
 
@@ -12,7 +13,7 @@ const STR = {
   generating: "Generating visualization…",
 };
 
-const GEN_DURATION_MS = 10_000;
+const GEN_DURATION_MS = 1_000;
 
 type GenState = "idle" | "generating" | "ready";
 
@@ -124,6 +125,20 @@ export function InlineVideoGate({ videoUrl }: Props) {
         controls
         autoPlay
         playsInline
+        // Apply per-URL speed override the moment the metadata is known
+        // (and again on every load) so chat-embedded clips honour the
+        // same speed registry CinematicView uses.
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget;
+          v.playbackRate = videoSpeedFor(videoUrl);
+        }}
+        onRateChange={(e) => {
+          const v = e.currentTarget;
+          const want = videoSpeedFor(videoUrl);
+          if (Math.abs(v.playbackRate - want) > 0.01) {
+            v.playbackRate = want;
+          }
+        }}
       />
     </div>
   );
