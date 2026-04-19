@@ -3,6 +3,7 @@ import type { InteractiveSpec } from "../types";
 import { FunctionPlot } from "./FunctionPlot";
 import { play, stop } from "../lib/player";
 import { useLang } from "../lib/lang";
+import { useT } from "../lib/translate";
 
 type Props = {
   spec: InteractiveSpec;
@@ -10,13 +11,18 @@ type Props = {
 };
 
 const STR = {
-  en: { play: "▶ Play explanation", live: "Describe current", stop: "■ Stop" },
-  ar: { play: "▶ تشغيل الشرح", live: "وصف الحالة دلوقتي", stop: "■ إيقاف" },
+  play: "▶ Play explanation",
+  live: "Describe current",
+  stop: "■ Stop",
 };
 
 export function InteractiveView({ spec, transcript }: Props) {
   const { lang, dir } = useLang();
-  const t = STR[lang];
+  const t = {
+    play: useT(STR.play),
+    live: useT(STR.live),
+    stop: useT(STR.stop),
+  };
 
   const [values, setValues] = useState<Record<string, number>>(() =>
     Object.fromEntries(spec.params.map((p) => [p.name, p.default])),

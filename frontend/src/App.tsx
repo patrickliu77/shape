@@ -4,12 +4,12 @@ import { ExplainPanel } from "./components/ExplainPanel";
 import { Logo } from "./components/Logo";
 import { GlobalChat } from "./components/GlobalChat";
 import { theorems, theoremById } from "./theorems-data";
-import { LangProvider, useLang, LANG_LABEL } from "./lib/lang";
+import { LangProvider, useLang, LANG_LABEL, SUPPORTED } from "./lib/lang";
+import { TranslationProvider } from "./lib/translate";
 import { useMediaQuery } from "./lib/use-media-query";
 import { ThemeToggle } from "./lib/theme";
-import type { Lang } from "./types";
 
-const SUPPORTED_LANGS: Lang[] = ["en", "ar"];
+const SUPPORTED_LANGS = SUPPORTED;
 
 const PANEL_WIDTH_KEY = "shape.panelWidth";
 const PANEL_MIN = 360;
@@ -26,26 +26,18 @@ function readPanelWidth(): number {
 function LangSwitcher() {
   const { lang, setLang } = useLang();
   return (
-    <div
-      className="flex items-center gap-1 rounded-full bg-stone-100 dark:bg-stone-800 p-1"
-      role="group"
+    <select
+      value={lang}
+      onChange={(e) => setLang(e.target.value as typeof lang)}
+      className="text-xs font-medium rounded-full bg-stone-100 dark:bg-stone-800 px-3 py-1.5 text-ink dark:text-stone-100 border border-transparent hover:border-stone-300 dark:hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
       aria-label="Language"
     >
       {SUPPORTED_LANGS.map((l) => (
-        <button
-          key={l}
-          onClick={() => setLang(l)}
-          className={`px-2.5 py-1 text-xs font-medium rounded-full transition ${
-            lang === l
-              ? "bg-white text-ink shadow-sm dark:bg-stone-700 dark:text-stone-100"
-              : "text-stone-500 hover:text-ink dark:text-stone-400 dark:hover:text-stone-100"
-          }`}
-          aria-pressed={lang === l}
-        >
+        <option key={l} value={l} className="bg-white dark:bg-stone-800 text-ink dark:text-stone-100">
           {LANG_LABEL[l]}
-        </button>
+        </option>
       ))}
-    </div>
+    </select>
   );
 }
 
@@ -188,7 +180,9 @@ function Shell() {
 export default function App() {
   return (
     <LangProvider>
-      <Shell />
+      <TranslationProvider>
+        <Shell />
+      </TranslationProvider>
     </LangProvider>
   );
 }

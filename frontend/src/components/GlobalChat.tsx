@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ask, type AskStep } from "../lib/api";
 import { useLang } from "../lib/lang";
+import { useT } from "../lib/translate";
 import { MathText } from "../lib/math-text";
 import { InlineVideoGate } from "./InlineVideoGate";
 import { play as playNarration, stop as stopNarration } from "../lib/player";
@@ -20,45 +21,43 @@ type Message = {
 };
 
 const STR = {
-  en: {
-    placeholder: "Ask any math question…",
-    ask: "Ask",
-    title: "Ask shape",
-    subtitle: "I can answer math questions and point you to the right textbook visualization.",
-    open: "▶ Open visualization",
-    close: "Close",
-    thinking: "Thinking…",
-    failed: "Sorry — couldn't reach the AI right now.",
-    steps: "Step-by-step",
-    playStep: "Play narration",
-    stopStep: "Stop",
-    examples: "Try:",
-    ex1: "Why does the chain rule multiply derivatives?",
-    ex2: "What's the derivative of e^(x²)?",
-    ex3: "Why is ∫e^(-x²)dx equal to √π?",
-  },
-  ar: {
-    placeholder: "اسأل أي سؤال رياضيات…",
-    ask: "اسأل",
-    title: "اسأل shape",
-    subtitle: "ممكن أجاوب على أسئلة الرياضيات وأوريك الـ visualization المناسبة من الكتاب.",
-    open: "▶ افتح الـ visualization",
-    close: "إغلاق",
-    thinking: "بفكّر…",
-    failed: "آسف — مش قادر أوصل للسيرفر دلوقتي.",
-    steps: "الحل خطوة بخطوة",
-    playStep: "تشغيل الشرح",
-    stopStep: "إيقاف",
-    examples: "جرّب:",
-    ex1: "ليه قانون السلسلة بيضرب المشتقات؟",
-    ex2: "إيه مشتقة e^(x²)؟",
-    ex3: "ليه ∫e^(-x²)dx بتساوي √π؟",
-  },
+  placeholder: "Ask any math question…",
+  ask: "Ask",
+  title: "Ask shape",
+  subtitle: "I can answer math questions and point you to the right textbook visualization.",
+  open: "▶ Open visualization",
+  close: "Close",
+  thinking: "Thinking…",
+  failed: "Sorry — couldn't reach the AI right now.",
+  steps: "Step-by-step",
+  playStep: "Play narration",
+  stopStep: "Stop",
+  examples: "Try:",
+  ex1: "Why does the chain rule multiply derivatives?",
+  ex2: "What's the derivative of e^(x²)?",
+  ex3: "Why is ∫e^(-x²)dx equal to √π?",
 };
 
 export function GlobalChat({ onOpenTheorem }: Props) {
   const { lang, dir } = useLang();
-  const t = STR[lang];
+  void lang;
+  const t = {
+    placeholder: useT(STR.placeholder),
+    ask: useT(STR.ask),
+    title: useT(STR.title),
+    subtitle: useT(STR.subtitle),
+    open: useT(STR.open),
+    close: useT(STR.close),
+    thinking: useT(STR.thinking),
+    failed: useT(STR.failed),
+    steps: useT(STR.steps),
+    playStep: useT(STR.playStep),
+    stopStep: useT(STR.stopStep),
+    examples: useT(STR.examples),
+    ex1: useT(STR.ex1),
+    ex2: useT(STR.ex2),
+    ex3: useT(STR.ex3),
+  };
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);

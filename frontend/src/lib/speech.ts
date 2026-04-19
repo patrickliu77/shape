@@ -10,6 +10,11 @@ export type SpeakOptions = {
 const BCP47: Record<Lang, string> = {
   en: "en-US",
   ar: "ar-EG",
+  hi: "hi-IN",
+  zh: "zh-CN",
+  fr: "fr-FR",
+  kk: "kk-KZ",
+  ja: "ja-JP",
 };
 
 export function bcp47(lang: Lang): string {

@@ -24,6 +24,27 @@ VOICES = {
     # ar-EG-ShakirNeural: the only male Egyptian-Arabic neural voice in
     # Azure. No styles, but prosody adjustments give a warm teacher feel.
     "ar": "ar-EG-ShakirNeural",
+    # hi-IN-MadhurNeural: warm Hindi male voice.
+    "hi": "hi-IN-MadhurNeural",
+    # zh-CN-YunxiNeural: Chinese male voice with a calm/teacher-like delivery.
+    "zh": "zh-CN-YunxiNeural",
+    # fr-FR-HenriNeural: French male voice, neutral newsreader register.
+    "fr": "fr-FR-HenriNeural",
+    # kk-KZ-DauletNeural: the only male Kazakh neural voice in Azure.
+    "kk": "kk-KZ-DauletNeural",
+    # ja-JP-KeitaNeural: Japanese male voice, warm and calm.
+    "ja": "ja-JP-KeitaNeural",
+}
+
+# xml:lang values for SSML — required for proper phoneme selection.
+XML_LANGS = {
+    "en": "en-US",
+    "ar": "ar-EG",
+    "hi": "hi-IN",
+    "zh": "zh-CN",
+    "fr": "fr-FR",
+    "kk": "kk-KZ",
+    "ja": "ja-JP",
 }
 
 
@@ -94,6 +115,8 @@ def _build_ssml(text: str, lang: str) -> str:
     """
     voice = VOICES[lang]
     safe = _xml_escape(text)
+    xml_lang = XML_LANGS[lang]
+
     if lang == "en":
         body = (
             f'<voice name="{voice}">'
@@ -102,14 +125,20 @@ def _build_ssml(text: str, lang: str) -> str:
             f'</mstts:express-as>'
             f'</voice>'
         )
-        xml_lang = "en-US"
-    else:  # ar
+    elif lang == "ar":
         body = (
             f'<voice name="{voice}">'
             f'<prosody rate="-8%" pitch="+1%">{safe}</prosody>'
             f'</voice>'
         )
-        xml_lang = "ar-EG"
+    else:
+        # hi / zh / fr / kk / ja — neutral teacher pacing, slight slowdown
+        # so math vocabulary lands clearly.
+        body = (
+            f'<voice name="{voice}">'
+            f'<prosody rate="-6%">{safe}</prosody>'
+            f'</voice>'
+        )
     return (
         f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" '
         f'xmlns:mstts="http://www.w3.org/2001/mstts" xml:lang="{xml_lang}">'

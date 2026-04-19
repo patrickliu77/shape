@@ -18,7 +18,7 @@ type LangCtx = {
 const Ctx = createContext<LangCtx | null>(null);
 
 const STORAGE_KEY = "shape.lang";
-const SUPPORTED: Lang[] = ["en", "ar"];
+export const SUPPORTED: Lang[] = ["en", "ar", "hi", "zh", "fr", "kk", "ja"];
 
 function readInitial(): Lang {
   if (typeof window === "undefined") return "en";
@@ -56,9 +56,24 @@ export function useLang(): LangCtx {
   return v;
 }
 
+// Pick the right per-language string bundle from a Partial<Record<Lang, T>>,
+// falling back to English when the requested language has no localised copy.
+// Components define their STR table for at least { en, ar } and rely on this
+// helper for the other supported locales.
+export function pickStr<T>(strs: Partial<Record<Lang, T>>, lang: Lang): T {
+  return (strs[lang] ?? strs.en) as T;
+}
+
+// Short labels for the language picker. Each one is shown in its own script
+// so the user can scan-pick visually.
 export const LANG_LABEL: Record<Lang, string> = {
   en: "EN",
   ar: "عربي",
+  hi: "हिंदी",
+  zh: "中文",
+  fr: "FR",
+  kk: "Қазақ",
+  ja: "日本語",
 };
 
 import polished from "../polished-transcripts.json";
@@ -70,9 +85,18 @@ export function pickTranscript(
   lang: Lang,
   theoremId?: string,
 ): string | undefined {
+  // Prefer a polished version if one exists for this theorem + lang.
   if (theoremId) {
-    const p = POLISHED[theoremId]?.[lang] ?? POLISHED[theoremId]?.en;
+    const p = POLISHED[theoremId]?.[lang];
     if (p) return p;
   }
-  return transcript[lang] ?? transcript.en;
+  // Then a hand-written transcript in the requested language.
+  if (transcript[lang]) return transcript[lang];
+  // Fall back to the English transcript text. The /tts endpoint will
+  // auto-translate it to the requested language before synthesis.
+  if (theoremId) {
+    const p = POLISHED[theoremId]?.en;
+    if (p) return p;
+  }
+  return transcript.en;
 }

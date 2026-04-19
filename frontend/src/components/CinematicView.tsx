@@ -3,6 +3,7 @@ import type { CinematicSpec } from "../types";
 import { stop as stopGlobalPlayer } from "../lib/player";
 import { fetchTTS } from "../lib/tts";
 import { useLang } from "../lib/lang";
+import { useT } from "../lib/translate";
 import { randomQuote, type Quote } from "../lib/quotes";
 import { MathText } from "../lib/math-text";
 
@@ -11,33 +12,20 @@ type Props = {
   transcript?: string;
 };
 
+// Single English source; useT() routes every label through the language
+// filter when a non-English language is selected.
 const STR = {
-  en: {
-    play: "▶ Play with narration",
-    stop: "■ Stop",
-    missing: "Animation not rendered yet.",
-    missingHint: "Run python scripts/build_cache.py to generate it.",
-    fetching: "Loading narration…",
-    volume: "Volume",
-    mute: "Mute",
-    unmute: "Unmute",
-    visualize: "✨ Generate visualization",
-    visualizeHint: "Tap to generate a Manim animation for this theorem.",
-    generating: "Generating visualization…",
-  },
-  ar: {
-    play: "▶ تشغيل مع الشرح الصوتي",
-    stop: "■ إيقاف",
-    missing: "الأنيميشن لسه مش جاهز.",
-    missingHint: "شغّل python scripts/build_cache.py علشان تولّده.",
-    fetching: "بتحمّل الشرح الصوتي…",
-    volume: "الصوت",
-    mute: "كتم",
-    unmute: "تشغيل",
-    visualize: "✨ توليد الفيديو التوضيحي",
-    visualizeHint: "اضغط عشان نوّلد لك أنيميشن Manim للنظرية دي.",
-    generating: "بنولّد الفيديو التوضيحي…",
-  },
+  play: "▶ Play with narration",
+  stop: "■ Stop",
+  missing: "Animation not rendered yet.",
+  missingHint: "Run python scripts/build_cache.py to generate it.",
+  fetching: "Loading narration…",
+  volume: "Volume",
+  mute: "Mute",
+  unmute: "Unmute",
+  visualize: "✨ Generate visualization",
+  visualizeHint: "Tap to generate a Manim animation for this theorem.",
+  generating: "Generating visualization…",
 };
 
 // Total fake "generation" time. The actual video is preloaded; this gives
@@ -63,7 +51,21 @@ type GenState = "idle" | "generating" | "ready";
 
 export function CinematicView({ spec, transcript }: Props) {
   const { lang } = useLang();
-  const t = STR[lang];
+  // Route every label through the language filter. Returns the English
+  // string while a translation is loading.
+  const t = {
+    play: useT(STR.play),
+    stop: useT(STR.stop),
+    missing: useT(STR.missing),
+    missingHint: useT(STR.missingHint),
+    fetching: useT(STR.fetching),
+    volume: useT(STR.volume),
+    mute: useT(STR.mute),
+    unmute: useT(STR.unmute),
+    visualize: useT(STR.visualize),
+    visualizeHint: useT(STR.visualizeHint),
+    generating: useT(STR.generating),
+  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [videoMissing, setVideoMissing] = useState(false);
@@ -118,6 +120,14 @@ export function CinematicView({ spec, transcript }: Props) {
     };
   }, [genState]);
 
+  // 1ms of silence as a base64 MP3 — used to "prime" the audio element when
+  // the real narration URL hasn't loaded yet (e.g. while Claude is busy
+  // translating an English transcript into Hindi/Chinese/Kazakh). Without
+  // a src on the element, the muted play()/pause() unlock trick can't run,
+  // so audio is silently denied by the browser when the URL arrives later.
+  const SILENT_MP3 =
+    "data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//sQxAADgnABGiAAQBCqgCRMAAgEAH//////////+/g3VGAAAAAVVVVVUEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
+
   const startGeneration = () => {
     setProgress(0);
     setQuote(randomQuote());
@@ -125,23 +135,34 @@ export function CinematicView({ spec, transcript }: Props) {
 
     // Browsers block audio.play() if there's no recent user gesture. The
     // 10-second gate eats the user-activation window, so by the time the
-    // video reveals + tries to autoplay narration, Chrome silently denies it
-    // (the original "lost narrator" bug). Trick: prime the audio element
-    // *now*, inside the click handler, by issuing a muted .play() then
-    // .pause(). Once unlocked, subsequent programmatic plays work even
-    // after the activation window expires.
+    // video reveals + tries to autoplay narration, Chrome silently denies
+    // it (the original "lost narrator" bug). Trick: prime the audio
+    // element *now*, inside the click handler, by issuing a muted .play()
+    // then .pause(). Once the element has been played, subsequent
+    // programmatic plays work even after the activation window expires.
+    //
+    // If the real narration URL hasn't arrived yet (e.g. Claude is still
+    // translating into Hindi/Chinese), we prime against a silent 1ms MP3
+    // first — the *element* gets unlocked, then once the real src lands
+    // the browser lets us play it without a fresh gesture.
     const a = audioRef.current;
     if (a) {
+      const hadSrc = !!a.src;
+      if (!hadSrc) {
+        a.src = SILENT_MP3;
+      }
       a.muted = true;
       a.play()
         .then(() => {
           a.pause();
           a.currentTime = 0;
           a.muted = muted;
+          // Drop the silent placeholder so the React-driven src takes over
+          // when the real URL arrives.
+          if (!hadSrc) a.removeAttribute("src");
         })
         .catch(() => {
-          // Even a failed play() inside a user gesture often unlocks future
-          // plays on iOS, so this is still worth attempting.
+          if (!hadSrc) a.removeAttribute("src");
         });
     }
   };

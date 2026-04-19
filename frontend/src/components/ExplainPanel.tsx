@@ -7,6 +7,7 @@ import { Surface3DView } from "./Surface3DView";
 import { explain } from "../lib/api";
 import { stop as stopPlayback } from "../lib/player";
 import { useLang, pickTranscript } from "../lib/lang";
+import { useT } from "../lib/translate";
 import { MathText } from "../lib/math-text";
 
 type Props = {
@@ -47,59 +48,55 @@ const MODEL_BADGE: Record<NonNullable<ChatMessage["model"]>, { label: string; cl
   },
 };
 
-const MODE_LABEL = {
-  en: {
-    cinematic: "Animated",
-    interactive: "Interactive",
-    interactive3d: "3D Interactive",
-    "cinematic+interactive": "Animated · Interactive",
-    "cinematic+3d": "Animated · 3D",
-    "interactive+3d": "Interactive · 3D",
-    all: "Animated · Interactive · 3D",
-  },
-  ar: {
-    cinematic: "متحرّك",
-    interactive: "تفاعلي",
-    interactive3d: "تفاعلي ثلاثي الأبعاد",
-    "cinematic+interactive": "متحرّك · تفاعلي",
-    "cinematic+3d": "متحرّك · ثلاثي الأبعاد",
-    "interactive+3d": "تفاعلي · ثلاثي الأبعاد",
-    all: "متحرّك · تفاعلي · ثلاثي الأبعاد",
-  },
-} as const;
+// Single English source. The badge string is built then translated as a
+// whole sentence so the language filter handles word order naturally.
+const MODE_LABEL_EN: Record<
+  | "cinematic"
+  | "interactive"
+  | "interactive3d"
+  | "cinematic+interactive"
+  | "cinematic+3d"
+  | "interactive+3d"
+  | "all",
+  string
+> = {
+  cinematic: "Animated",
+  interactive: "Interactive",
+  interactive3d: "3D Interactive",
+  "cinematic+interactive": "Animated · Interactive",
+  "cinematic+3d": "Animated · 3D",
+  "interactive+3d": "Interactive · 3D",
+  all: "Animated · Interactive · 3D",
+};
 
 const STR = {
-  en: {
-    interactive: "Interactive",
-    animated: "Animated",
-    transcript: "Transcript",
-    askPrompt: "Ask about this theorem",
-    askPlaceholder: "Why does this work?",
-    send: "Send",
-    thinking: "thinking…",
-    backendDown:
-      "(Backend not reachable. Start the FastAPI server with `uvicorn main:app` in the backend/ folder.)",
-    emptyHint: "Tap any theorem in the textbook to explore it.",
-    close: "Close",
-  },
-  ar: {
-    interactive: "تفاعلي",
-    animated: "متحرّك",
-    transcript: "النص",
-    askPrompt: "اسأل عن النظرية دي",
-    askPlaceholder: "ليه ده صحيح؟",
-    send: "إرسال",
-    thinking: "بفكّر…",
-    backendDown:
-      "(السيرفر مش شغّال. شغّل `uvicorn main:app` جوّه فولدر backend/.)",
-    emptyHint: "دوس على أي نظرية في الكتاب علشان تستكشفها.",
-    close: "إغلاق",
-  },
+  interactive: "Interactive",
+  animated: "Animated",
+  transcript: "Transcript",
+  askPrompt: "Ask about this theorem",
+  askPlaceholder: "Why does this work?",
+  send: "Send",
+  thinking: "thinking…",
+  backendDown:
+    "(Backend not reachable. Start the FastAPI server with `uvicorn main:app` in the backend/ folder.)",
+  emptyHint: "Tap any theorem in the textbook to explore it.",
+  close: "Close",
 };
 
 export function ExplainPanel({ theorem, onClose }: Props) {
   const { lang, dir } = useLang();
-  const t = STR[lang];
+  const t = {
+    interactive: useT(STR.interactive),
+    animated: useT(STR.animated),
+    transcript: useT(STR.transcript),
+    askPrompt: useT(STR.askPrompt),
+    askPlaceholder: useT(STR.askPlaceholder),
+    send: useT(STR.send),
+    thinking: useT(STR.thinking),
+    backendDown: useT(STR.backendDown),
+    emptyHint: useT(STR.emptyHint),
+    close: useT(STR.close),
+  };
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
@@ -162,7 +159,7 @@ export function ExplainPanel({ theorem, onClose }: Props) {
       <header className="flex items-start justify-between p-5 border-b border-stone-200 dark:border-[#2d2740] shrink-0">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.2em] text-accent dark:text-violet-300 font-semibold mb-1">
-            {MODE_LABEL[lang][mode]}
+            {useT(MODE_LABEL_EN[mode])}
           </div>
           <h2 className="text-lg font-semibold text-ink dark:text-stone-100 leading-tight">
             <MathText>{theorem.title}</MathText>

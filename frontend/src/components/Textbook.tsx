@@ -1,8 +1,6 @@
-import type { ReactNode } from "react";
 import type { Theorem } from "../types";
 import { TheoremBlock } from "./TheoremBlock";
 import { FormalDefinition } from "./FormalDefinition";
-import { MathText } from "../lib/math-text";
 
 type Props = {
   theorems: Theorem[];
@@ -23,9 +21,10 @@ type Section = {
   // encounter in the printed page. Dense, formal, hard to parse on first read.
   formal: { kind: FormalKind; name?: string; body: string };
   // Friendly prose intro that lives *inside* the tappable box, above the
-  // simplified statement. This is what shape unlocks for the student when
-  // they tap the formal definition.
-  intro: ReactNode;
+  // simplified statement. Stored as a plain string with $...$ math markup
+  // so it can be auto-translated by Claude when the student picks a
+  // non-English language.
+  intro: string;
   theoremIndex: number;
 };
 
@@ -50,13 +49,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "Let $f$ be a real-valued function defined on an open interval containing $a$, except possibly at $a$ itself. We say that $\\lim_{x \\to a} f(x) = L$ if for every $\\varepsilon > 0$ there exists $\\delta > 0$ such that, for all $x$ in the domain of $f$, $$0 < |x - a| < \\delta \\;\\implies\\; |f(x) - L| < \\varepsilon.$$",
         },
-        intro: (
-          <>
-            Before we can speak of derivatives, we need to say precisely what it
-            means for a function to approach a value. Tap to see the ε–δ
-            definition unpacked visually.
-          </>
-        ),
+        intro:
+          "Before we can speak of derivatives, we need to say precisely what it means for a function to approach a value. Tap to see the ε–δ definition unpacked visually.",
         theoremIndex: 0,
       },
     ],
@@ -74,13 +68,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "Let $f$ be defined on an open interval containing $a$. The derivative of $f$ at $a$ is $$f'(a) \\;=\\; \\lim_{h \\to 0} \\frac{f(a + h) - f(a)}{h},$$ provided this limit exists. If it does, $f$ is said to be differentiable at $a$.",
         },
-        intro: (
-          <>
-            The <em>derivative</em> of a function at a point measures the
-            instantaneous rate of change. Geometrically, it is the slope of the
-            tangent line, obtained as a limit of slopes of secant lines.
-          </>
-        ),
+        intro:
+          "The derivative of a function at a point measures the instantaneous rate of change. Geometrically, it is the slope of the tangent line, obtained as a limit of slopes of secant lines.",
         theoremIndex: 1,
       },
       {
@@ -91,12 +80,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "Let $g$ be differentiable at $a$ and let $f$ be differentiable at $g(a)$. Then the composite $f \\circ g$ is differentiable at $a$, and $$(f \\circ g)'(a) \\;=\\; f'\\!\\bigl(g(a)\\bigr)\\, g'(a).$$",
         },
-        intro: (
-          <>
-            Most useful functions are built by composing simpler ones. The chain
-            rule tells us exactly how the derivative of a composition decomposes.
-          </>
-        ),
+        intro:
+          "Most useful functions are built by composing simpler ones. The chain rule tells us exactly how the derivative of a composition decomposes.",
         theoremIndex: 2,
       },
       {
@@ -106,15 +91,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "For any constant $a \\in \\mathbb{R}$, the unique solution of the initial value problem $$y'(t) = a\\, y(t), \\qquad y(0) = 1$$ on $\\mathbb{R}$ is $y(t) = e^{a t}$. More generally, the general solution of $y' = a y$ is $y(t) = C e^{a t}$ for an arbitrary constant $C \\in \\mathbb{R}$.",
         },
-        intro: (
-          <>
-            A <em>differential equation</em> relates a function to its own
-            derivative. The simplest and most important is{" "}
-            <em>y′ = a&nbsp;y</em>, whose solution is the exponential. Try the
-            slider below to feel how a single parameter governs an entire family
-            of behaviours.
-          </>
-        ),
+        intro:
+          "A differential equation relates a function to its own derivative. The simplest and most important is $y' = a\\,y$, whose solution is the exponential. Try the slider below to feel how a single parameter governs an entire family of behaviours.",
         theoremIndex: 3,
       },
       {
@@ -124,13 +102,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "For constants $\\gamma > 0$ and $\\omega > 0$, every real-valued solution of $$\\ddot{y}(t) + 2\\gamma\\, \\dot{y}(t) + (\\gamma^2 + \\omega^2)\\, y(t) = 0$$ on $\\mathbb{R}$ is of the form $y(t) = e^{-\\gamma t}\\bigl(A \\cos \\omega t + B \\sin \\omega t\\bigr)$ for some constants $A, B \\in \\mathbb{R}$.",
         },
-        intro: (
-          <>
-            Add a restoring force and a little friction, and the same ideas
-            produce a damped oscillator — the mathematics of a pendulum, a
-            loudspeaker, or an electrical circuit.
-          </>
-        ),
+        intro:
+          "Add a restoring force and a little friction, and the same ideas produce a damped oscillator — the mathematics of a pendulum, a loudspeaker, or an electrical circuit.",
         theoremIndex: 4,
       },
     ],
@@ -149,11 +122,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "For every $\\theta \\in \\mathbb{R}$ and every integer $n \\in \\mathbb{Z}$, $$(\\cos\\theta + i\\sin\\theta)^{n} \\;=\\; \\cos(n\\theta) + i\\sin(n\\theta).$$",
         },
-        intro: (
-          <MathText>
-            {"A complex number on the unit circle, $\\cos\\theta + i\\sin\\theta$, is really just an angle. Multiplying two of them adds their angles, so raising one to the $n$-th power multiplies the angle by $n$. That is De Moivre's theorem."}
-          </MathText>
-        ),
+        intro:
+          "A complex number on the unit circle, $\\cos\\theta + i\\sin\\theta$, is really just an angle. Multiplying two of them adds their angles, so raising one to the $n$-th power multiplies the angle by $n$. That is De Moivre's theorem.",
         theoremIndex: 5,
       },
     ],
@@ -171,14 +141,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "Let $f : R \\to \\mathbb{R}$ be a bounded function on a bounded region $R \\subset \\mathbb{R}^{2}$. Partition $R$ by an axis-aligned grid of width $\\Delta x$ and height $\\Delta y$, and select a sample point $(x_{i}^{*}, y_{j}^{*})$ in each cell. The double integral of $f$ over $R$ is $$\\iint_{R} f(x, y)\\,dA \\;=\\; \\lim_{\\Delta x,\\, \\Delta y \\to 0} \\sum_{i, j} f(x_{i}^{*},\\, y_{j}^{*})\\,\\Delta x\\,\\Delta y,$$ provided this limit exists and is independent of the choice of partition and sample points.",
         },
-        intro: (
-          <>
-            A double integral measures volume the same way a single integral
-            measures area. The cleanest definition slices the region into a
-            grid, stacks a prism on each tiny square, and sends the grid size
-            to zero — the limit of those sums is the integral itself.
-          </>
-        ),
+        intro:
+          "A double integral measures volume the same way a single integral measures area. The cleanest definition slices the region into a grid, stacks a prism on each tiny square, and sends the grid size to zero — the limit of those sums is the integral itself.",
         theoremIndex: 6,
       },
     ],
@@ -196,13 +160,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "The determinant of a $2 \\times 2$ matrix $A = \\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$ is the scalar $$\\det A \\;=\\; ad - bc.$$ The map $A : \\mathbb{R}^{2} \\to \\mathbb{R}^{2}$ scales every area by $|\\det A|$, and reverses orientation if and only if $\\det A < 0$. The map is invertible iff $\\det A \\neq 0$.",
         },
-        intro: (
-          <>
-            A linear map sends squares to parallelograms. The determinant tells
-            you exactly how much the area changes — and whether orientation
-            flips along the way.
-          </>
-        ),
+        intro:
+          "A linear map sends squares to parallelograms. The determinant tells you exactly how much the area changes — and whether orientation flips along the way.",
         theoremIndex: 7,
       },
     ],
@@ -221,11 +180,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "Let $f \\in C^{2}(\\mathbb{R}^{2})$ have a critical point at $(x_{0}, y_{0})$, i.e.\\ $\\nabla f(x_{0}, y_{0}) = 0$, and let $H = \\begin{pmatrix} f_{xx} & f_{xy} \\\\ f_{xy} & f_{yy} \\end{pmatrix}$ denote its Hessian at that point. Then $(x_{0}, y_{0})$ is a local minimum if $\\det H > 0$ and $f_{xx} > 0$; a local maximum if $\\det H > 0$ and $f_{xx} < 0$; and a saddle point if $\\det H < 0$.",
         },
-        intro: (
-          <MathText>
-            {"With two input variables the picture really needs three dimensions. The surface $z = ax^2 + by^2$ is the cleanest place to meet the trio of multivariable critical points: minimum, maximum, and saddle. Open the panel — there's a real 3D mesh you can rotate."}
-          </MathText>
-        ),
+        intro:
+          "With two input variables the picture really needs three dimensions. The surface $z = ax^2 + by^2$ is the cleanest place to meet the trio of multivariable critical points: minimum, maximum, and saddle. Open the panel — there's a real 3D mesh you can rotate.",
         theoremIndex: 8,
       },
     ],
@@ -243,11 +199,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "The improper integral of $e^{-x^{2}}$ over the whole real line converges, with $$\\int_{-\\infty}^{\\infty} e^{-x^{2}}\\, dx \\;=\\; \\sqrt{\\pi}.$$",
         },
-        intro: (
-          <MathText>
-            {"The bell curve $e^{-x^2}$ refuses to be integrated by the usual tricks — it has no elementary antiderivative. But you can still find its area, by a beautiful sleight of hand: square the integral, turn it into a double integral on the plane, and switch to polar coordinates. The answer is $\\sqrt{\\pi}$."}
-          </MathText>
-        ),
+        intro:
+          "The bell curve $e^{-x^2}$ refuses to be integrated by the usual tricks — it has no elementary antiderivative. But you can still find its area, by a beautiful sleight of hand: square the integral, turn it into a double integral on the plane, and switch to polar coordinates. The answer is $\\sqrt{\\pi}$.",
         theoremIndex: 9,
       },
       {
@@ -257,11 +210,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "A real-valued random variable $X$ is said to have the normal distribution with mean $\\mu \\in \\mathbb{R}$ and variance $\\sigma^{2} > 0$, written $X \\sim \\mathcal{N}(\\mu, \\sigma^{2})$, if its probability density function is $$f(x) \\;=\\; \\frac{1}{\\sigma \\sqrt{2\\pi}}\\, \\exp\\!\\left(-\\frac{(x - \\mu)^{2}}{2\\sigma^{2}}\\right), \\qquad x \\in \\mathbb{R}.$$",
         },
-        intro: (
-          <MathText>
-            {"Take the Gaussian integral, normalise it to area $1$, and shift/scale it: that's the normal distribution. The mean $\\mu$ slides the bell, the standard deviation $\\sigma$ stretches it. The $\\sqrt{\\pi}$ from the previous section is exactly what makes the area come out to one."}
-          </MathText>
-        ),
+        intro:
+          "Take the Gaussian integral, normalise it to area $1$, and shift/scale it: that's the normal distribution. The mean $\\mu$ slides the bell, the standard deviation $\\sigma$ stretches it. The $\\sqrt{\\pi}$ from the previous section is exactly what makes the area come out to one.",
         theoremIndex: 10,
       },
       {
@@ -271,11 +221,8 @@ const CHAPTERS: ChapterDef[] = [
           body:
             "A counting process $\\{N(t) : t \\ge 0\\}$ is a Poisson process with rate $\\lambda > 0$ if $N(0) = 0$, it has stationary independent increments, and for every $s, t \\ge 0$ and $k = 0, 1, 2, \\ldots$, $$P\\bigl(N(s + t) - N(s) = k\\bigr) \\;=\\; \\frac{(\\lambda t)^{k}\\, e^{-\\lambda t}}{k!}.$$ Its inter-arrival times $X_{1}, X_{2}, \\ldots$ are i.i.d.\\ with $X_{i} \\sim \\mathrm{Exp}(\\lambda)$, and the arrival time of the $k$-th event $T_{k} = X_{1} + \\cdots + X_{k}$ satisfies $T_{k} \\sim \\mathrm{Gamma}(k, \\lambda)$.",
         },
-        intro: (
-          <MathText>
-            {"All three distributions live on the same picture: a single timeline of randomly occurring events with rate $\\lambda$. Count the events in a window — that's $\\text{Poisson}(\\lambda T)$. Measure the gap between two consecutive events — that's $\\text{Exp}(\\lambda)$. Wait for the $k$-th event — that's $\\text{Gamma}(k, \\lambda)$. One process, three distributions, all tied together."}
-          </MathText>
-        ),
+        intro:
+          "All three distributions live on the same picture: a single timeline of randomly occurring events with rate $\\lambda$. Count the events in a window — that's $\\text{Poisson}(\\lambda T)$. Measure the gap between two consecutive events — that's $\\text{Exp}(\\lambda)$. Wait for the $k$-th event — that's $\\text{Gamma}(k, \\lambda)$. One process, three distributions, all tied together.",
         theoremIndex: 11,
       },
     ],
@@ -326,7 +273,7 @@ export function Textbook({ theorems, activeId, onSelect }: Props) {
                   />
                   <TheoremBlock
                     theorem={th}
-                    intro={s.intro}
+                    introText={s.intro}
                     onTap={() => onSelect(th.id)}
                     active={activeId === th.id}
                   />

@@ -1,4 +1,12 @@
-export type Lang = "en" | "ar";
+// Supported UI + TTS languages.
+//   en — English
+//   ar — Egyptian Arabic (ar-EG)
+//   hi — Hindi
+//   zh — Simplified Chinese
+//   fr — French
+//   kk — Kazakh
+//   ja — Japanese
+export type Lang = "en" | "ar" | "hi" | "zh" | "fr" | "kk" | "ja";
 
 export type Param = {
   name: string;

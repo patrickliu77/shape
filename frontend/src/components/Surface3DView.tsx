@@ -3,12 +3,13 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import type { Surface3DSpec } from "../types";
 import { useLang } from "../lib/lang";
+import { useT } from "../lib/translate";
 
 type Props = { spec: Surface3DSpec };
 
 const STR = {
-  en: { reset: "↻ Reset view", drag: "Drag to rotate · scroll to zoom" },
-  ar: { reset: "↻ إعادة الزاوية", drag: "اسحب للتدوير · مرّر لتكبير وتصغير" },
+  reset: "↻ Reset view",
+  drag: "Drag to rotate · scroll to zoom",
 };
 
 // Map height → colour along a violet→cyan→yellow ramp. Highlights extrema.
@@ -26,7 +27,11 @@ function heightColor(t: number, target: THREE.Color) {
 
 export function Surface3DView({ spec }: Props) {
   const { lang } = useLang();
-  const t = STR[lang];
+  void lang;
+  const t = {
+    reset: useT(STR.reset),
+    drag: useT(STR.drag),
+  };
   const containerRef = useRef<HTMLDivElement>(null);
   const meshRef = useRef<THREE.Mesh | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);

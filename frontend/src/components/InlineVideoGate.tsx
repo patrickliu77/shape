@@ -1,21 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useLang } from "../lib/lang";
+import { useT } from "../lib/translate";
 import { randomQuote, type Quote } from "../lib/quotes";
 import { MathText } from "../lib/math-text";
 
 type Props = { videoUrl: string };
 
 const STR = {
-  en: {
-    visualize: "✨ Show me",
-    visualizeHint: "Tap to render the visualization for this step.",
-    generating: "Generating visualization…",
-  },
-  ar: {
-    visualize: "✨ ورّيني",
-    visualizeHint: "اضغط عشان نعرض لك الفيديو التوضيحي للخطوة دي.",
-    generating: "بنولّد الفيديو التوضيحي…",
-  },
+  visualize: "✨ Show me",
+  visualizeHint: "Tap to render the visualization for this step.",
+  generating: "Generating visualization…",
 };
 
 const GEN_DURATION_MS = 10_000;
@@ -28,7 +22,12 @@ type GenState = "idle" | "generating" | "ready";
 // reveal the preloaded video with autoplay.
 export function InlineVideoGate({ videoUrl }: Props) {
   const { lang } = useLang();
-  const t = STR[lang];
+  void lang;
+  const t = {
+    visualize: useT(STR.visualize),
+    visualizeHint: useT(STR.visualizeHint),
+    generating: useT(STR.generating),
+  };
   const [genState, setGenState] = useState<GenState>("idle");
   const [progress, setProgress] = useState(0);
   const [quote, setQuote] = useState<Quote>(() => randomQuote());

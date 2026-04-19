@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-from clients import ask as ask_client, inception, k2, llm, mercury, prewarm, tts  # noqa: E402
+from clients import ask as ask_client, inception, k2, llm, mercury, prewarm, translate, tts  # noqa: E402
 
 app = FastAPI(title="Sparkle")
 
@@ -41,7 +41,7 @@ AUDIO_CACHE = CACHE / "audio"
 AUDIO_CACHE.mkdir(parents=True, exist_ok=True)
 app.mount("/cache", StaticFiles(directory=CACHE), name="cache")
 
-Lang = Literal["en", "ar"]
+Lang = Literal["en", "ar", "hi", "zh", "fr", "kk", "ja"]
 
 
 class ChatMessage(BaseModel):
@@ -190,11 +190,17 @@ def _tts_cache_path(text: str, lang: str) -> Path:
 
 @app.post("/tts", response_model=TTSResponse)
 def synthesize(req: TTSRequest):
-    out = _tts_cache_path(req.text, req.lang)
+    # We only have hand-written transcripts in en + ar. For the other
+    # supported languages, auto-translate before synthesis so the voice
+    # actually speaks the target language.
+    text = req.text
+    if req.lang not in ("en", "ar"):
+        text = translate.translate(text, req.lang)
+    out = _tts_cache_path(text, req.lang)
     cached = out.exists() and out.stat().st_size > 0
     if not cached:
         try:
-            tts.synthesize(req.text, req.lang, out)
+            tts.synthesize(text, req.lang, out)
         except tts.TTSUnavailable as e:
             raise HTTPException(status_code=503, detail=str(e))
     # Append the file's mtime as a cache-buster so the browser fetches the
@@ -208,8 +214,54 @@ def synthesize(req: TTSRequest):
 @app.post("/ask", response_model=AskResponse)
 def ask(req: AskRequest):
     history = [m.model_dump() for m in (req.history or [])]
-    result = ask_client.ask(text=req.text, lang=req.lang, history=history)
+    # Always ask Claude in English so we get the high-quality canonical
+    # response, then run it through the language filter on the way back.
+    # Egyptian Arabic has hand-written prompts in ask_client so for `ar` we
+    # let it talk natively; everything else funnels through translate.
+    if req.lang == "ar":
+        result = ask_client.ask(text=req.text, lang="ar", history=history)
+        return AskResponse(**result)
+
+    result = ask_client.ask(text=req.text, lang="en", history=history)
+    if req.lang != "en":
+        result["answer"] = translate.translate(result.get("answer", "") or "", req.lang)
+        translated_steps: list[dict] = []
+        # Batch all step titles+bodies into one Claude call for speed.
+        steps = result.get("steps") or []
+        flat: list[str] = []
+        for s in steps:
+            flat.append(s.get("title", "") or "")
+            flat.append(s.get("body", "") or "")
+        if flat:
+            translated = translate.translate_batch(flat, req.lang)
+            for i, s in enumerate(steps):
+                translated_steps.append({
+                    "title": translated[2 * i],
+                    "body": translated[2 * i + 1],
+                })
+            result["steps"] = translated_steps
     return AskResponse(**result)
+
+
+class TranslateRequest(BaseModel):
+    texts: List[str] = Field(..., max_length=200)
+    lang: Lang = "en"
+
+
+class TranslateResponse(BaseModel):
+    translated: List[str]
+
+
+@app.post("/translate", response_model=TranslateResponse)
+def translate_endpoint(req: TranslateRequest):
+    """Batch-translate UI strings into the requested language.
+
+    Used by the frontend to switch the visible text inside theorem boxes
+    when the user picks a non-English language. Cached per (text, lang)
+    so repeated calls are free.
+    """
+    out = translate.translate_batch(req.texts, req.lang)
+    return TranslateResponse(translated=out)
 
 
 THEOREM_META = {
