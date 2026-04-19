@@ -8,6 +8,12 @@ import {
   type ReactNode,
 } from "react";
 import type { Theorem } from "../types";
+import {
+  BUILTIN_BOOKS,
+  DEFAULT_BUILTIN_ID,
+  builtinById,
+  type ChapterDef,
+} from "../books";
 
 // ── Imported-PDF schema (mirrors backend /import-pdf response) ──────────────
 export type ImportedSection = {
@@ -39,32 +45,35 @@ export type ImportedTextbook = {
 };
 
 // ── Library entries ─────────────────────────────────────────────────────────
-// One Book per visible item in the left-hand library menu. The built-in
-// "Calculus Textbook" is always present; every PDF the student imports adds
-// another entry.
 type BookKind = "builtin" | "imported";
 
 export type Book = {
   id: string;
   name: string;
   kind: BookKind;
-  lastOpenedAt: number; // ms epoch
-  content?: ImportedTextbook; // present only for imported books
+  lastOpenedAt: number;
+  // Present only for imported books — the raw structured payload.
+  content?: ImportedTextbook;
 };
 
-export const BUILTIN_ID = "builtin";
+// Kept exported for back-compat with components that imported the old
+// constant; now points at the default built-in id.
+export const BUILTIN_ID = DEFAULT_BUILTIN_ID;
 
 type Ctx = {
-  books: Book[]; // sorted most-recently-opened first
+  books: Book[];
   activeId: string;
   active: Book | undefined;
-  // Returns the resolved imported content for the active book, or null when
-  // the built-in textbook is active.
+  // Resolved chapters for whichever book is active. Always defined.
+  activeChapters: ChapterDef[];
+  // Resolved theorems for whichever book is active. Built-ins return their
+  // own Theorem[]; imported PDFs return synthesised text-only Theorem[].
+  activeTheorems: Theorem[];
+  // Convenience for callers that specifically need the imported payload.
   activeImported: ImportedTextbook | null;
-  // Theorems derived from the imported content. Empty when builtin is active.
   importedTheorems: Theorem[];
   setActive: (id: string) => void;
-  addImported: (data: ImportedTextbook) => string; // returns new book id
+  addImported: (data: ImportedTextbook) => string;
   remove: (id: string) => void;
 };
 
@@ -74,29 +83,30 @@ const STORAGE_KEY = "shape.library";
 
 type Persisted = {
   activeId: string;
-  // Only imported books are persisted; the builtin is always added on load.
-  books: Book[];
+  // Only imported books are persisted; built-ins are always available from
+  // BUILTIN_BOOKS at module-load time.
+  imported: Book[];
 };
 
 function readInitial(): Persisted {
   if (typeof window === "undefined") {
-    return { activeId: BUILTIN_ID, books: [] };
+    return { activeId: DEFAULT_BUILTIN_ID, imported: [] };
   }
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Persisted;
-      if (parsed && Array.isArray(parsed.books)) {
+      if (parsed && Array.isArray(parsed.imported)) {
         return {
-          activeId: parsed.activeId || BUILTIN_ID,
-          books: parsed.books.filter((b) => b.kind === "imported"),
+          activeId: parsed.activeId || DEFAULT_BUILTIN_ID,
+          imported: parsed.imported.filter((b) => b.kind === "imported"),
         };
       }
     }
   } catch {
     /* ignore */
   }
-  // Migrate from the previous single-import key if present.
+  // Migrate the older single-import key if present.
   try {
     const old = window.localStorage.getItem("shape.importedTextbook");
     if (old) {
@@ -105,7 +115,7 @@ function readInitial(): Persisted {
         const id = newBookId();
         return {
           activeId: id,
-          books: [
+          imported: [
             {
               id,
               name: parsed.source || "Imported PDF",
@@ -120,7 +130,7 @@ function readInitial(): Persisted {
   } catch {
     /* ignore */
   }
-  return { activeId: BUILTIN_ID, books: [] };
+  return { activeId: DEFAULT_BUILTIN_ID, imported: [] };
 }
 
 function newBookId(): string {
@@ -144,13 +154,45 @@ function chaptersToTheorems(t: ImportedTextbook | null): Theorem[] {
   return out;
 }
 
+// Convert imported PDF chapters → ChapterDef[] (the same shape built-ins
+// use) so the textbook viewer can render either with the same code.
+function importedToChapters(
+  t: ImportedTextbook,
+  derivedTheorems: Theorem[],
+): ChapterDef[] {
+  const idToIndex = new Map(derivedTheorems.map((th, i) => [th.id, i]));
+  return t.chapters.map((ch) => ({
+    number: ch.number,
+    title: ch.title,
+    blurb: ch.blurb,
+    sections: ch.sections.map((s) => ({
+      heading: s.heading,
+      formal: {
+        kind: s.formal.kind,
+        name: s.formal.name ?? undefined,
+        body: s.formal.body,
+      },
+      intro: s.intro,
+      theoremIndex: idToIndex.get(s.theorem.id) ?? 0,
+    })),
+  }));
+}
+
 export function TextbookLibraryProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<Persisted>(readInitial);
-  // Update lastOpenedAt for the builtin lazily on first render so it sorts
-  // sensibly in the menu without being persisted across sessions.
-  const [builtinOpenedAt, setBuiltinOpenedAt] = useState<number>(() => {
-    return state.activeId === BUILTIN_ID ? Date.now() : 0;
-  });
+  // Open-times for built-in books: not persisted across sessions, just used
+  // for the menu's most-recently-opened sort within a session.
+  const [builtinOpenedAt, setBuiltinOpenedAt] = useState<Record<string, number>>(
+    () => {
+      const init: Record<string, number> = {};
+      // Whichever built-in is active at startup gets a fresh timestamp so it
+      // sorts to the top.
+      const ids = BUILTIN_BOOKS.map((b) => b.id);
+      const now = Date.now();
+      for (const id of ids) init[id] = id === state.activeId ? now : 0;
+      return init;
+    },
+  );
 
   const persist = useCallback((next: Persisted) => {
     setState(next);
@@ -164,15 +206,16 @@ export function TextbookLibraryProvider({ children }: { children: ReactNode }) {
   const setActive = useCallback(
     (id: string) => {
       const now = Date.now();
-      if (id === BUILTIN_ID) {
-        setBuiltinOpenedAt(now);
+      const isBuiltin = !!builtinById(id);
+      if (isBuiltin) {
+        setBuiltinOpenedAt((prev) => ({ ...prev, [id]: now }));
         persist({ ...state, activeId: id });
         return;
       }
-      const books = state.books.map((b) =>
+      const imported = state.imported.map((b) =>
         b.id === id ? { ...b, lastOpenedAt: now } : b,
       );
-      persist({ activeId: id, books });
+      persist({ activeId: id, imported });
     },
     [persist, state],
   );
@@ -188,63 +231,83 @@ export function TextbookLibraryProvider({ children }: { children: ReactNode }) {
         lastOpenedAt: now,
         content: data,
       };
-      persist({ activeId: id, books: [book, ...state.books] });
+      persist({ activeId: id, imported: [book, ...state.imported] });
       return id;
     },
-    [persist, state.books],
+    [persist, state.imported],
   );
 
   const remove = useCallback(
     (id: string) => {
-      if (id === BUILTIN_ID) return; // can't delete the built-in
-      const books = state.books.filter((b) => b.id !== id);
-      const activeId = state.activeId === id ? BUILTIN_ID : state.activeId;
-      if (activeId === BUILTIN_ID) setBuiltinOpenedAt(Date.now());
-      persist({ activeId, books });
+      if (builtinById(id)) return; // built-ins are not deletable
+      const imported = state.imported.filter((b) => b.id !== id);
+      const activeId =
+        state.activeId === id ? DEFAULT_BUILTIN_ID : state.activeId;
+      if (activeId === DEFAULT_BUILTIN_ID) {
+        const now = Date.now();
+        setBuiltinOpenedAt((prev) => ({ ...prev, [DEFAULT_BUILTIN_ID]: now }));
+      }
+      persist({ activeId, imported });
     },
     [persist, state],
   );
 
-  // Always-present builtin entry; reset its lastOpenedAt every render so the
-  // menu shows a meaningful sort even before the user has switched anything.
+  // Reset the active built-in's open-time when nothing has been recorded yet.
   useEffect(() => {
-    if (state.activeId === BUILTIN_ID && builtinOpenedAt === 0) {
-      setBuiltinOpenedAt(Date.now());
+    if (builtinById(state.activeId) && !builtinOpenedAt[state.activeId]) {
+      setBuiltinOpenedAt((prev) => ({ ...prev, [state.activeId]: Date.now() }));
     }
   }, [state.activeId, builtinOpenedAt]);
 
+  // Stitch built-ins + imported into one Book[] sorted by lastOpenedAt desc.
   const books = useMemo<Book[]>(() => {
-    const builtin: Book = {
-      id: BUILTIN_ID,
-      name: "Calculus Textbook",
-      kind: "builtin",
-      lastOpenedAt: builtinOpenedAt,
-    };
-    return [builtin, ...state.books].sort(
+    const builtinBooks: Book[] = BUILTIN_BOOKS.map((b) => ({
+      id: b.id,
+      name: b.name,
+      kind: "builtin" as const,
+      lastOpenedAt: builtinOpenedAt[b.id] || 0,
+    }));
+    return [...builtinBooks, ...state.imported].sort(
       (a, b) => b.lastOpenedAt - a.lastOpenedAt,
     );
-  }, [state.books, builtinOpenedAt]);
+  }, [state.imported, builtinOpenedAt]);
 
   const active = useMemo(
     () => books.find((b) => b.id === state.activeId),
     [books, state.activeId],
   );
 
-  const activeImported = useMemo<ImportedTextbook | null>(
-    () => (active && active.kind === "imported" ? active.content ?? null : null),
-    [active],
-  );
-
-  const importedTheorems = useMemo(
-    () => chaptersToTheorems(activeImported),
-    [activeImported],
-  );
+  // Resolve the active book's content. Built-ins look up by id from the
+  // BUILTIN_BOOKS registry; imported books carry their content inline.
+  const { activeChapters, activeTheorems, activeImported, importedTheorems } =
+    useMemo(() => {
+      const builtin = builtinById(state.activeId);
+      if (builtin) {
+        return {
+          activeChapters: builtin.chapters,
+          activeTheorems: builtin.theorems,
+          activeImported: null as ImportedTextbook | null,
+          importedTheorems: [] as Theorem[],
+        };
+      }
+      const importedBook = state.imported.find((b) => b.id === state.activeId);
+      const content = importedBook?.content ?? null;
+      const derived = chaptersToTheorems(content);
+      return {
+        activeChapters: content ? importedToChapters(content, derived) : [],
+        activeTheorems: derived,
+        activeImported: content,
+        importedTheorems: derived,
+      };
+    }, [state.activeId, state.imported]);
 
   const value = useMemo<Ctx>(
     () => ({
       books,
       activeId: state.activeId,
       active,
+      activeChapters,
+      activeTheorems,
       activeImported,
       importedTheorems,
       setActive,
@@ -255,6 +318,8 @@ export function TextbookLibraryProvider({ children }: { children: ReactNode }) {
       books,
       state.activeId,
       active,
+      activeChapters,
+      activeTheorems,
       activeImported,
       importedTheorems,
       setActive,

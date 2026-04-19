@@ -5,7 +5,7 @@ import { Logo } from "./components/Logo";
 import { GlobalChat } from "./components/GlobalChat";
 import { ImportPdfButton } from "./components/ImportPdfButton";
 import { LibraryMenu } from "./components/LibraryMenu";
-import { theorems, theoremById } from "./theorems-data";
+import { theoremById } from "./theorems-data";
 import { LangProvider, useLang, LANG_LABEL, SUPPORTED, SCOPES } from "./lib/lang";
 import { TranslationProvider, PopupTranslationScope } from "./lib/translate";
 import { TextbookLibraryProvider, useTextbookLibrary } from "./lib/library";
@@ -69,10 +69,7 @@ function LangSwitcher() {
 
 function Shell() {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const { activeImported, importedTheorems } = useTextbookLibrary();
-  // When the active library entry is an imported PDF, theorem lookups go
-  // against its derived theorems. Otherwise we use the built-in textbook.
-  const activeTheorems = activeImported ? importedTheorems : theorems;
+  const { activeTheorems, activeId: bookId } = useTextbookLibrary();
   const active = activeId
     ? activeTheorems.find((t) => t.id === activeId) ?? theoremById(activeId) ?? null
     : null;
@@ -82,7 +79,7 @@ function Shell() {
   // to a theorem that doesn't exist in the new book.
   useEffect(() => {
     setActiveId(null);
-  }, [activeImported]);
+  }, [bookId]);
 
   // Tailwind 'md' = 768px. We render exactly one ExplainPanel (with its own
   // <audio> element) per breakpoint to prevent duplicate narration playback.
@@ -151,7 +148,10 @@ function Shell() {
       <LibraryMenu />
 
       <main className="flex-1 flex overflow-hidden relative">
-        <div className="flex-1 min-w-0 overflow-y-auto pb-24">
+        {/* Symmetrical horizontal padding: pl-12 / lg:pl-16 keeps the
+            article off the left-edge library hot-zone, and the matching
+            pr-12 / lg:pr-16 keeps it off the divider / explain panel. */}
+        <div className="flex-1 min-w-0 overflow-y-auto pb-24 pl-12 lg:pl-16 pr-12 lg:pr-16">
           <Textbook
             theorems={activeTheorems}
             activeId={activeId}

@@ -58,29 +58,29 @@ export function TheoremBlock({
           onTap();
         }
       }}
-      className={`theorem-tappable my-5 ${
+      className={`theorem-tappable my-5 max-w-full overflow-hidden ${
         active ? "ring-2 ring-accent ring-offset-2" : ""
       }`}
     >
-      <div className="text-[10px] uppercase tracking-[0.2em] text-accent dark:text-violet-300 font-sans font-semibold mb-1">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-accent dark:text-violet-300 font-sans font-semibold mb-1 break-words">
         {tBadge}
       </div>
       {introText ? (
-        <div className="text-stone-700 dark:text-stone-300 mb-3 leading-relaxed">
+        <div className="text-stone-700 dark:text-stone-300 mb-3 leading-relaxed break-words">
           <MathText>{tIntro}</MathText>
         </div>
       ) : intro ? (
-        <div className="text-stone-700 dark:text-stone-300 mb-3 leading-relaxed">
+        <div className="text-stone-700 dark:text-stone-300 mb-3 leading-relaxed break-words">
           {intro}
         </div>
       ) : null}
-      <div className="font-sans font-semibold text-ink dark:text-stone-100 text-base leading-tight mb-2">
+      <div className="font-sans font-semibold text-ink dark:text-stone-100 text-base leading-tight mb-2 break-words">
         <MathText>{tTitle}</MathText>
       </div>
-      <div className="py-2 overflow-x-auto">
+      <div className="py-2 overflow-x-auto max-w-full">
         <BlockMath math={theorem.statement} />
       </div>
-      <p className="text-stone-700 dark:text-stone-300 font-serif italic">
+      <p className="text-stone-700 dark:text-stone-300 font-serif italic break-words">
         <MathText>{tContext}</MathText>
       </p>
     </div>

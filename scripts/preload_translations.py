@@ -152,10 +152,25 @@ def main() -> int:
         ROOT / "frontend" / "src" / "theorems-data.ts",
         keys=["title", "context"],
     )
-    textbook_strings = _extract_string_values(
-        ROOT / "frontend" / "src" / "components" / "Textbook.tsx",
-        keys=["title", "blurb", "heading", "body", "name", "intro"],
-    )
+
+    # Pull chapter / section text out of every book module — the original
+    # calculus.ts plus geometry.ts and algebra.ts and any future additions.
+    book_files = [
+        ROOT / "frontend" / "src" / "components" / "Textbook.tsx",  # legacy
+        ROOT / "frontend" / "src" / "books" / "calculus.ts",
+        ROOT / "frontend" / "src" / "books" / "geometry.ts",
+        ROOT / "frontend" / "src" / "books" / "algebra.ts",
+    ]
+    textbook_strings: list[str] = []
+    for path in book_files:
+        if not path.exists():
+            continue
+        textbook_strings.extend(
+            _extract_string_values(
+                path,
+                keys=["title", "blurb", "heading", "body", "name", "intro", "context"],
+            )
+        )
 
     all_strings: list[str] = []
     seen: set[str] = set()

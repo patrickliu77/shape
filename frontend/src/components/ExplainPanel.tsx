@@ -157,13 +157,13 @@ export function ExplainPanel({ theorem, onClose }: Props) {
   };
 
   return (
-    <aside className="w-full h-full flex flex-col bg-white dark:bg-[#15121f]">
-      <header className="flex items-start justify-between p-5 border-b border-stone-200 dark:border-[#2d2740] shrink-0">
-        <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-accent dark:text-violet-300 font-semibold mb-1">
+    <aside className="w-full h-full flex flex-col bg-white dark:bg-[#15121f] min-w-0 overflow-hidden">
+      <header className="flex items-start justify-between p-5 border-b border-stone-200 dark:border-[#2d2740] shrink-0 min-w-0">
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-accent dark:text-violet-300 font-semibold mb-1 break-words">
             {useT(MODE_LABEL_EN[mode])}
           </div>
-          <h2 className="text-lg font-semibold text-ink dark:text-stone-100 leading-tight">
+          <h2 className="text-lg font-semibold text-ink dark:text-stone-100 leading-tight break-words">
             <MathText>{useT(theorem.title)}</MathText>
           </h2>
         </div>
@@ -176,7 +176,7 @@ export function ExplainPanel({ theorem, onClose }: Props) {
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 space-y-5 min-w-0">
         <div className="bg-stone-50 dark:bg-[#221d31] border border-stone-200 dark:border-[#2d2740] rounded-md px-4 py-3 overflow-x-auto">
           <BlockMath math={theorem.statement} />
         </div>

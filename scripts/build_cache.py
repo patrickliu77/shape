@@ -50,6 +50,19 @@ SCENES: list[tuple[str, str, str]] = [
     ("10_roots_of_unity.py", "RootsOfUnity", "10_roots_of_unity"),
     ("11_euler.py", "EulerIdentity", "11_euler"),
     ("12_poisson_exp_gamma.py", "PoissonExpGamma", "12_poisson_exp_gamma"),
+    # Geometry (middle-school) book
+    ("geom_01_pythagoras.py", "Pythagoras", "geom_01_pythagoras"),
+    ("geom_02_angle_sum.py", "AngleSum", "geom_02_angle_sum"),
+    ("geom_03_area_triangle.py", "AreaTriangle", "geom_03_area_triangle"),
+    ("geom_04_circumference.py", "Circumference", "geom_04_circumference"),
+    ("geom_05_area_circle.py", "AreaCircle", "geom_05_area_circle"),
+    ("geom_06_similar.py", "SimilarTriangles", "geom_06_similar"),
+    # Algebra (middle-school) book
+    ("alg_01_distributive.py", "Distributive", "alg_01_distributive"),
+    ("alg_02_diff_squares.py", "DiffSquares", "alg_02_diff_squares"),
+    ("alg_03_linear_eq.py", "LinearEquation", "alg_03_linear_eq"),
+    ("alg_04_slope_intercept.py", "SlopeIntercept", "alg_04_slope_intercept"),
+    ("alg_05_quadratic.py", "Quadratic", "alg_05_quadratic"),
 ]
 
 QUALITY_DIR = {

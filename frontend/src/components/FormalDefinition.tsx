@@ -29,13 +29,13 @@ export function FormalDefinition({ kind, name, body }: Props) {
   const tName = useT(name ?? "");
   const tBody = useT(body);
   return (
-    <div className="my-5 border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-[#1f1b2c] px-5 py-4 font-serif text-stone-900 dark:text-stone-100 leading-relaxed">
-      <div className="mb-2 text-[15px]">
+    <div className="my-5 border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-[#1f1b2c] px-5 py-4 font-serif text-stone-900 dark:text-stone-100 leading-relaxed max-w-full overflow-hidden">
+      <div className="mb-2 text-[15px] break-words">
         <span className="font-semibold italic">{tKind}</span>
         {name && <span className="font-semibold italic"> ({tName})</span>}
         <span className="font-semibold">.</span>{" "}
       </div>
-      <div className="text-[15px]">
+      <div className="text-[15px] break-words">
         <MathText>{tBody}</MathText>
       </div>
     </div>

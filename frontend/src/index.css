@@ -155,6 +155,28 @@ html.dark .katex {
   margin: 0.25em 0;
 }
 
+/* Display math (BlockMath) defaults to overflow:visible which pushes the
+ * parent column wider when a formula is too long. Force it to scroll
+ * horizontally inside whatever container holds it. */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}
+
+/* Inline KaTeX shouldn't blow out a narrow column either — give it a tiny
+ * top/bottom padding so a tall fraction doesn't clip when it scrolls. */
+.katex {
+  max-width: 100%;
+}
+
+/* The textbook article must also clip — the surrounding flex column gives
+ * it a fixed max-width but nested grid/flex children can still push it. */
+.textbook {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 .overflow-x-auto::-webkit-scrollbar {
   height: 6px;
   width: 8px;
