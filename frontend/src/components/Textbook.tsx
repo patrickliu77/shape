@@ -2,7 +2,7 @@ import type { Theorem } from "../types";
 import { TheoremBlock } from "./TheoremBlock";
 import { FormalDefinition } from "./FormalDefinition";
 import { useT } from "../lib/translate";
-import { useImportedTextbook } from "../lib/imported";
+import { useTextbookLibrary } from "../lib/library";
 
 type Props = {
   theorems: Theorem[];
@@ -327,10 +327,10 @@ function SectionView({
 }
 
 export function Textbook({ theorems, activeId, onSelect }: Props) {
-  // When the user has imported a PDF, that takes over: we stitch the
-  // imported chapters into the same {chapters → sections → theoremIndex}
-  // shape and render through the same ChapterView/SectionView code.
-  const { imported, importedTheorems } = useImportedTextbook();
+  // When the active library entry is an imported PDF, we stitch its
+  // chapters into the same {chapters → sections → theoremIndex} shape and
+  // render through the same ChapterView/SectionView code.
+  const { activeImported: imported, importedTheorems, active } = useTextbookLibrary();
 
   if (imported) {
     // Build a Theorem[] indexed by the section's theorem id so the existing
@@ -354,11 +354,12 @@ export function Textbook({ theorems, activeId, onSelect }: Props) {
       })),
     }));
 
+    const sourceName = active?.name ?? imported.source;
     return (
       <article className="textbook max-w-2xl mx-auto px-10 py-12 bg-paper dark:bg-[#1a1726] dark:text-stone-200 shadow-sm rounded-md my-6 transition-colors">
-        {imported.source && (
+        {sourceName && (
           <div className="text-[10px] uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-6 font-sans">
-            Imported from <span className="text-accent dark:text-violet-300">{imported.source}</span>
+            Imported from <span className="text-accent dark:text-violet-300">{sourceName}</span>
           </div>
         )}
         {importedChapters.map((ch, ci) => (
