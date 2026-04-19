@@ -110,7 +110,8 @@ Rules:
 - For video_url: pick the video that BEST illustrates the question's core idea, or null if no video fits well. Use the EXACT URL string from the video catalog.
 - For video_at_step: choose the step index (0-based) where seeing the visual would unlock the rest of the explanation. Usually NOT step 0 — the student needs some setup first. Often the second or third step works best.
 - If video_url is null, video_at_step must also be null.
-- If the question is off-topic (not math), set steps to [] and all other fields to null."""
+- If the question is off-topic (not math), set steps to [] and all other fields to null.
+- Do NOT use markdown emphasis inside the prose: no **bold**, no *italic*, no `code`, no # headings. The renderer is plain text + KaTeX math only."""
 
 SYSTEM_AR = f"""إنت مدرّس رياضيات صبور وودود — زي أخوك الكبير اللي بيشرحلك على القهوة. إنت جوّه *shape*، كتاب رياضيات تفاعلي بالذكاء الاصطناعي.
 
@@ -140,7 +141,8 @@ SYSTEM_AR = f"""إنت مدرّس رياضيات صبور وودود — زي أ
 - video_url: اختار الفيديو اللي بيشرح فكرة السؤال أحسن، أو null لو مفيش حاجة مناسبة. استخدم الـ URL بالظبط من القائمة.
 - video_at_step: اختار الخطوة (تبدأ من 0) اللي الفيديو هيتشاف فيها. عادةً مش الخطوة 0 — الطالب محتاج تمهيد الأول. الخطوة التانية أو التالتة بتنفع كويس.
 - لو video_url = null، video_at_step كمان لازم يبقى null.
-- لو السؤال مش رياضيات، steps = []، وكل الحاجات التانية null. بالعامية المصرية برضه."""
+- لو السؤال مش رياضيات، steps = []، وكل الحاجات التانية null. بالعامية المصرية برضه.
+- متستخدمش markdown جوّه النصوص: مفيش **بولد**، ولا *italic*، ولا `code`، ولا # عناوين."""
 
 
 def _strip_code_fence(text: str) -> str:

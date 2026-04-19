@@ -94,14 +94,17 @@ class NormalDistribution(ThreeDScene):
         self.play(FadeOut(beat1), run_time=0.4)
         self.remove(beat1)
 
-        # ───────── Beat 2: stretch σ wide then narrow ───────────────────────
-        beat2 = Tex("Sliding $\\sigma$ stretches it wide or pulls it tall.",
+        # ───────── Beat 2: pinch σ small first, then stretch wide ──────────
+        # Order chosen to match the narration: "small σ gives a sharp tall
+        # spike, large σ gives a wide gentle hill." So the curve narrows,
+        # then widens, then settles back to σ = 1.
+        beat2 = Tex("Sliding $\\sigma$ pinches it tall or stretches it wide.",
                     font_size=30, color=YELLOW).to_edge(DOWN)
         self.add_fixed_in_frame_mobjects(beat2)
         self.play(Write(beat2), run_time=0.9)
-        self.play(sigma.animate.set_value(2.2), run_time=2.0, rate_func=smooth)
         self.play(sigma.animate.set_value(0.45), run_time=2.5, rate_func=smooth)
-        self.play(sigma.animate.set_value(1.0), run_time=1.5, rate_func=smooth)
+        self.play(sigma.animate.set_value(2.2),  run_time=2.5, rate_func=smooth)
+        self.play(sigma.animate.set_value(1.0),  run_time=1.5, rate_func=smooth)
         self.play(FadeOut(beat2), run_time=0.4)
         self.remove(beat2)
 

@@ -63,6 +63,12 @@ SCENES: list[tuple[str, str, str]] = [
     ("alg_03_linear_eq.py", "LinearEquation", "alg_03_linear_eq"),
     ("alg_04_slope_intercept.py", "SlopeIntercept", "alg_04_slope_intercept"),
     ("alg_05_quadratic.py", "Quadratic", "alg_05_quadratic"),
+    # Imported-PDF auto-attach scenes (numerical integration & improper integrals)
+    ("calc_trapezium.py", "TrapeziumRule", "calc_trapezium"),
+    ("calc_simpson.py", "SimpsonRule", "calc_simpson"),
+    ("calc_improper_inf.py", "ImproperInfinite", "calc_improper_inf"),
+    ("calc_improper_vert.py", "ImproperVertical", "calc_improper_vert"),
+    ("calc_comparison.py", "ComparisonTest", "calc_comparison"),
 ]
 
 QUALITY_DIR = {

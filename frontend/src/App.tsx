@@ -9,6 +9,7 @@ import { theoremById } from "./theorems-data";
 import { LangProvider, useLang, LANG_LABEL, SUPPORTED, SCOPES } from "./lib/lang";
 import { TranslationProvider, PopupTranslationScope } from "./lib/translate";
 import { TextbookLibraryProvider, useTextbookLibrary } from "./lib/library";
+import { FontProvider, useFont, FONTS } from "./lib/font";
 import { useMediaQuery } from "./lib/use-media-query";
 import { ThemeToggle } from "./lib/theme";
 
@@ -30,6 +31,29 @@ const SCOPE_LABEL: Record<(typeof SCOPES)[number], string> = {
   full: "Full page",
   popup: "Popup only",
 };
+
+function FontSwitcher() {
+  const { font, setFont } = useFont();
+  return (
+    <select
+      value={font}
+      onChange={(e) => setFont(e.target.value as typeof font)}
+      className="text-xs font-medium rounded-full bg-stone-100 dark:bg-stone-800 px-3 py-1.5 text-ink dark:text-stone-100 border border-transparent hover:border-stone-300 dark:hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
+      aria-label="UI font"
+      title="Switch the font used everywhere on the page"
+    >
+      {FONTS.map((f) => (
+        <option
+          key={f.key}
+          value={f.key}
+          className="bg-white dark:bg-stone-800 text-ink dark:text-stone-100"
+        >
+          {f.label}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function LangSwitcher() {
   const { lang, setLang, scope, setScope } = useLang();
@@ -128,18 +152,16 @@ function Shell() {
     <div className="h-screen flex flex-col bg-stone-100 dark:bg-[#0c0a14] transition-colors">
       <nav className="flex items-center justify-between px-4 sm:px-6 py-3 bg-white dark:bg-[#15121f] border-b border-stone-200 dark:border-[#2d2740] shrink-0">
         <div className="flex items-center gap-3 min-w-0 text-ink dark:text-stone-100">
-          {/* Square logo. In light mode the black background reads as a chip;
-              in dark mode it blends with the nav surface. */}
-          <Logo className="h-10 w-10 shrink-0 rounded" />
-          <span className="hidden sm:inline text-xs text-stone-400 dark:text-stone-500 truncate">
-            AI-native textbook · demo
-          </span>
+          {/* Transparent-bg wordmark logo — let the image breathe with auto
+              width and a slightly taller box, no rounded chip backing. */}
+          <Logo className="h-9 w-auto shrink-0" />
         </div>
         <div className="flex items-center gap-2">
           <span className="hidden md:inline text-xs text-stone-500 dark:text-stone-400 mr-2">
             Tap any theorem to see it move.
           </span>
           <ImportPdfButton />
+          <FontSwitcher />
           <LangSwitcher />
           <ThemeToggle />
         </div>
@@ -224,12 +246,14 @@ function Shell() {
 
 export default function App() {
   return (
-    <LangProvider>
-      <TranslationProvider>
-        <TextbookLibraryProvider>
-          <Shell />
-        </TextbookLibraryProvider>
-      </TranslationProvider>
-    </LangProvider>
+    <FontProvider>
+      <LangProvider>
+        <TranslationProvider>
+          <TextbookLibraryProvider>
+            <Shell />
+          </TextbookLibraryProvider>
+        </TranslationProvider>
+      </LangProvider>
+    </FontProvider>
   );
 }

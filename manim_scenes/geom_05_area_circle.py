@@ -50,13 +50,14 @@ class AreaCircle(Scene):
 
         self.play(FadeOut(radius_line), FadeOut(r_lab), run_time=0.4)
 
-        # Now move each wedge to its position in the alternating zipper.
-        # Even k → pointing up, odd k → pointing down. They sit side by side
-        # along a horizontal line.
+        # Move each wedge to its position in the alternating zipper.
+        # Each wedge contributes (πr / n) of horizontal width because their
+        # arc-bases (length 2πr/n) interlock when alternated up/down — half
+        # of each wedge's chord overlaps with the next. The total width
+        # therefore lands at exactly πr, matching the rectangle below.
         line_y = -1.6
-        wedge_width = 2 * radius * np.sin(PI / n) * 0.95  # chord-ish base width
-        # Total width ≈ pi * r (ish for finite n)
-        total_width = wedge_width * n
+        wedge_width = PI * radius / n
+        total_width = wedge_width * n  # = π r
         x_start = -total_width / 2
 
         anims = []

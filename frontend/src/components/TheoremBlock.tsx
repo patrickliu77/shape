@@ -80,7 +80,7 @@ export function TheoremBlock({
       <div className="py-2 overflow-x-auto max-w-full">
         <BlockMath math={theorem.statement} />
       </div>
-      <p className="text-stone-700 dark:text-stone-300 font-serif italic break-words">
+      <p className="text-stone-700 dark:text-stone-300 italic break-words">
         <MathText>{tContext}</MathText>
       </p>
     </div>

@@ -3,6 +3,7 @@ import { TheoremBlock } from "./TheoremBlock";
 import { FormalDefinition } from "./FormalDefinition";
 import { useT } from "../lib/translate";
 import { useTextbookLibrary } from "../lib/library";
+import { MathText } from "../lib/math-text";
 import type { ChapterDef, Section } from "../books";
 
 type Props = {
@@ -45,10 +46,12 @@ function ChapterView({
         <div className="text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2">
           {tChapterWord} {ch.number}
         </div>
-        <h1 className="text-4xl font-semibold text-ink dark:text-stone-100 mb-2">
-          {tTitle}
+        <h1 className="text-4xl font-semibold text-ink dark:text-stone-100 mb-2 break-words">
+          <MathText>{tTitle}</MathText>
         </h1>
-        <p className="text-stone-600 dark:text-stone-400 italic">{tBlurb}</p>
+        <p className="text-stone-600 dark:text-stone-400 italic break-words">
+          <MathText>{tBlurb}</MathText>
+        </p>
       </header>
 
       <section className="space-y-2">
@@ -90,11 +93,11 @@ function SectionView({
       <h2
         className={
           firstSection
-            ? "text-2xl font-semibold mt-8 mb-3"
-            : "text-2xl font-semibold mt-10 mb-3"
+            ? "text-2xl font-semibold mt-8 mb-3 break-words"
+            : "text-2xl font-semibold mt-10 mb-3 break-words"
         }
       >
-        {tHeading}
+        <MathText>{tHeading}</MathText>
       </h2>
       <FormalDefinition
         kind={section.formal.kind}

@@ -44,7 +44,12 @@ function readVolume(): number {
 // to match — that preserves the voice's intelligibility. Cap the slowdown so
 // the video never crawls; if the audio is much shorter than the video, just
 // let the audio finish early and the video continue at 1.0×.
-const VIDEO_RATE_MIN = 0.55;
+// Lower bound dropped so the video can stretch to ~3× its native length
+// when narration runs much longer than the original Manim render. Without
+// this, short videos (e.g. the 15s normal-distribution clip vs a 30s+
+// translated narration) finished well before the audio and the rest of
+// the explanation went unheard.
+const VIDEO_RATE_MIN = 0.3;
 const VIDEO_RATE_MAX = 1.0;
 
 type GenState = "idle" | "generating" | "ready";
@@ -267,14 +272,37 @@ export function CinematicView({ spec, transcript }: Props) {
       a.currentTime = Math.min(v.currentTime / vr, a.duration || 0);
       a.play().catch(() => {});
     };
-    const onPause = () => a.pause();
+    const onPause = () => {
+      // The browser fires `pause` both for user pauses AND when the video
+      // reaches its natural end. We only want to halt the narration in the
+      // first case — letting the audio carry on through the final frame is
+      // the whole point of the audio-led playback model.
+      if (v.ended) return;
+      a.pause();
+    };
     const onSeeking = () => {
       const vr = v.playbackRate || 1;
       a.currentTime = Math.min(v.currentTime / vr, a.duration || 0);
     };
-    const onEnded = () => {
-      a.pause();
-      a.currentTime = 0;
+    // Audio drives the experience — we want the student to hear every
+    // sentence even if the video happens to finish first.
+    //
+    //   - When the VIDEO ends: do NOT touch the audio. The video element
+    //     naturally pauses on its last frame; the narration carries on.
+    //     If the audio is still longer (common with translated narration
+    //     where some languages run a few seconds long), we keep playing
+    //     until the audio itself reports `ended`.
+    //
+    //   - When the AUDIO ends: stop the video too so the playback feels
+    //     "complete" rather than leaving the video looping silently past
+    //     the last sentence of narration.
+    const onVideoEnded = () => {
+      // Hold the video on its final frame — no audio interruption.
+    };
+    const onAudioEnded = () => {
+      if (!v.paused && !v.ended) {
+        v.pause();
+      }
     };
 
     syncVolume();
@@ -290,7 +318,8 @@ export function CinematicView({ spec, transcript }: Props) {
     v.addEventListener("pause", onPause);
     v.addEventListener("seeking", onSeeking);
     v.addEventListener("volumechange", syncVolume);
-    v.addEventListener("ended", onEnded);
+    v.addEventListener("ended", onVideoEnded);
+    a.addEventListener("ended", onAudioEnded);
     a.addEventListener("loadedmetadata", adjustRate);
     v.addEventListener("loadedmetadata", adjustRate);
 
@@ -299,7 +328,8 @@ export function CinematicView({ spec, transcript }: Props) {
       v.removeEventListener("pause", onPause);
       v.removeEventListener("seeking", onSeeking);
       v.removeEventListener("volumechange", syncVolume);
-      v.removeEventListener("ended", onEnded);
+      v.removeEventListener("ended", onVideoEnded);
+      a.removeEventListener("ended", onAudioEnded);
       a.removeEventListener("loadedmetadata", adjustRate);
       v.removeEventListener("loadedmetadata", adjustRate);
     };

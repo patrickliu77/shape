@@ -99,23 +99,25 @@ class AngleSum(Scene):
         ang_b = interior_angle(B, C, A)
         ang_c = interior_angle(C, A, B)
 
-        # We'll re-build the wedges flat on the baseline, oriented properly.
-        cursor_x = line_x_start
-        anim_steps = []
+        # Build three wedges that share a single centre on the baseline and
+        # sweep CONSECUTIVELY from 0 to π. Together they tile a half-disc,
+        # making the "α + β + γ = 180°" identity literally visible.
+        flat_radius = 1.4
+        center = np.array([0.0, line_y, 0.0])
+        cumulative = 0.0
         flat_wedges = []
         for ang, color in [(ang_a, YELLOW), (ang_b, GREEN), (ang_c, RED)]:
             flat = Sector(
-                radius=0.7,
-                start_angle=0,
+                radius=flat_radius,
+                start_angle=cumulative,
                 angle=ang,
                 color=color,
                 fill_color=color,
                 fill_opacity=0.55,
                 stroke_width=2,
             )
-            # Rotate so its starting edge sits ALONG the baseline
-            flat.move_arc_center_to([cursor_x, line_y, 0])
-            cursor_x += 0.7 * np.cos(ang) + 0.05  # slide right by chord-ish
+            flat.move_arc_center_to(center)
+            cumulative += ang
             flat_wedges.append(flat)
 
         # Animate copies of the original wedges transforming into the flat ones

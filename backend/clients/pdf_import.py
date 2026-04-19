@@ -74,11 +74,78 @@ Rules:
 - Do NOT invent material that isn't in the source. If a section has no formal statement, skip it.
 - Section ids must be unique across the whole document.
 - Math expressions must stay in LaTeX. Inline math uses single $...$; display math uses $$...$$.
+- DO NOT use LaTeX document-layout macros — no \\begin{itemize}, no \\end{itemize}, no \\begin{enumerate}, no \\item, no \\section, no \\par. The frontend renders math via KaTeX, which does NOT understand these. If you have a list, write it as: "(a) first thing; (b) second thing; (c) third thing." Plain prose only.
+- DO NOT use math-spacing commands (\\,, \\;, \\!, \\:) OUTSIDE of $...$ delimiters. Outside math, use a regular space.
 - Keep `body`, `intro`, `title`, `context` to a single line each — no newlines inside the JSON string.
 - Keep blurbs warm and approachable. Avoid stiff phrases like "this section will".
 - If the document is short or only contains one definition, return one chapter with one section.
 - Output VALID JSON only. No trailing commas, no comments, no extra prose.
 """
+
+
+# ── Defensive sanitiser ────────────────────────────────────────────────────
+# Even with explicit "do not emit" rules in the prompt, Claude occasionally
+# leaves behind LaTeX environments / item directives — especially when the
+# source PDF was a LaTeX-style textbook. Strip them post-hoc so KaTeX never
+# sees `\begin{itemize}` etc.
+_LIST_ENV_RE = re.compile(r"\\(?:begin|end)\{(?:itemize|enumerate|description|list)\}")
+_ITEM_RE = re.compile(r"\\item\b\s*")
+# Math-spacing commands outside math delimiters cause KaTeX-rendered blank
+# boxes when the renderer tries to compose them as text.
+_OUTSIDE_MATH_GLUE_RE = re.compile(r"\\[,;!:](?![A-Za-z])")
+# Section/paragraph layout macros that have no place in our short prose.
+_LAYOUT_RE = re.compile(r"\\(?:par|noindent|smallskip|medskip|bigskip|vspace\{[^}]*\}|hspace\{[^}]*\})\b\s*")
+
+
+def _split_math_chunks(text: str) -> list[tuple[str, bool]]:
+    """Walk through text returning (chunk, is_math) pairs.
+
+    Math regions ($..$, $$..$$, \\(..\\), \\[..\\]) are passed through
+    untouched so we can scrub the prose in between without damaging the
+    formulas KaTeX will render.
+    """
+    pattern = re.compile(
+        r"(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^$\n]+?\$|\\\([^)]*?\\\))"
+    )
+    out: list[tuple[str, bool]] = []
+    last = 0
+    for m in pattern.finditer(text):
+        if m.start() > last:
+            out.append((text[last : m.start()], False))
+        out.append((m.group(0), True))
+        last = m.end()
+    if last < len(text):
+        out.append((text[last:], False))
+    return out
+
+
+def _scrub_prose(prose: str) -> str:
+    """Remove LaTeX layout macros from non-math text."""
+    s = _LIST_ENV_RE.sub(" ", prose)
+    s = _ITEM_RE.sub(" • ", s)
+    s = _LAYOUT_RE.sub(" ", s)
+    s = _OUTSIDE_MATH_GLUE_RE.sub(" ", s)
+    # Collapse runs of whitespace that the substitutions left behind.
+    s = re.sub(r"[ \t]+", " ", s)
+    s = re.sub(r"\s+([,.;:])", r"\1", s)
+    return s.strip()
+
+
+def sanitize(text: str) -> str:
+    """Public entry point: strip layout LaTeX from the prose between math."""
+    if not text:
+        return text
+    parts = _split_math_chunks(text)
+    cleaned: list[str] = []
+    for chunk, is_math in parts:
+        if is_math:
+            cleaned.append(chunk)
+        else:
+            cleaned.append(_scrub_prose(chunk))
+    out = "".join(cleaned)
+    # If the cleanup left a leading bullet or stray separator, trim it.
+    out = re.sub(r"^\s*•\s*", "", out).strip()
+    return out
 
 
 def extract_pdf_text(pdf_bytes: bytes, max_pages: int = 60) -> str:
@@ -179,26 +246,26 @@ def parse_pdf_to_chapters(pdf_text: str, timeout: float = 120.0) -> dict[str, An
                 n += 1
             seen_ids.add(tid)
             out_sections.append({
-                "heading": str(s.get("heading", "")).strip(),
+                "heading": sanitize(str(s.get("heading", "")).strip()),
                 "formal": {
                     "kind": kind,
                     "name": (formal.get("name") or None),
-                    "body": str(formal.get("body", "")).strip(),
+                    "body": sanitize(str(formal.get("body", "")).strip()),
                 },
-                "intro": str(s.get("intro", "")).strip(),
+                "intro": sanitize(str(s.get("intro", "")).strip()),
                 "theorem": {
                     "id": tid,
-                    "title": str(theorem.get("title", "")).strip(),
+                    "title": sanitize(str(theorem.get("title", "")).strip()),
                     "statement": str(theorem.get("statement", "")).strip(),
-                    "context": str(theorem.get("context", "")).strip(),
+                    "context": sanitize(str(theorem.get("context", "")).strip()),
                 },
             })
         if not out_sections:
             continue
         cleaned.append({
             "number": int(ch.get("number") or (ci + 1)),
-            "title": str(ch.get("title", "")).strip(),
-            "blurb": str(ch.get("blurb", "")).strip(),
+            "title": sanitize(str(ch.get("title", "")).strip()),
+            "blurb": sanitize(str(ch.get("blurb", "")).strip()),
             "sections": out_sections,
         })
 

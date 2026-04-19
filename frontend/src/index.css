@@ -5,6 +5,13 @@
 :root {
   color-scheme: light;
 
+  /* Switchable UI font — driven by the FontProvider in lib/font.tsx via the
+   * picker in the top nav. The non-Latin Noto fallbacks make sure Arabic,
+   * Hindi, CJK still render correctly regardless of which UI font is on. */
+  --font-sans: "Manrope", "Noto Sans", "Noto Sans Arabic",
+    "Noto Sans Devanagari", "Noto Sans JP", "Noto Sans SC", system-ui,
+    -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+
   /* Dark-mode palette is defined as CSS vars so we can reference them
    * outside of Tailwind utilities (body bg, theorem-tappable, scrollbars). */
   --bg-app: #f6f5ef;          /* page background */
@@ -45,9 +52,7 @@ body,
  * switches from English to Japanese or Hindi. */
 body {
   margin: 0;
-  font-family: "Inter", "Noto Sans", "Noto Sans Arabic", "Noto Sans Devanagari",
-    "Noto Sans JP", "Noto Sans SC", system-ui, -apple-system,
-    "Segoe UI", "Helvetica Neue", sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.55;
   background: var(--bg-app);
@@ -56,8 +61,7 @@ body {
 }
 
 .textbook {
-  font-family: "Crimson Pro", "Noto Serif", "Noto Serif JP",
-    "Noto Naskh Arabic", Georgia, serif;
+  font-family: var(--font-sans);
   font-size: 1.075rem;
   line-height: 1.7;
 }
@@ -126,7 +130,7 @@ html.dark .theorem-tappable:hover {
   position: absolute;
   top: 0.5rem;
   right: 0.75rem;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.7rem;
   color: theme("colors.accent");
   opacity: 0;
@@ -156,25 +160,49 @@ html.dark .katex {
 }
 
 /* Display math (BlockMath) defaults to overflow:visible which pushes the
- * parent column wider when a formula is too long. Force it to scroll
- * horizontally inside whatever container holds it. */
+ * parent column wider when a formula is too long. Constrain it to the
+ * column width and let the browser show a horizontal scrollbar ONLY when
+ * the typeset formula is genuinely wider than the column. */
 .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
+  /* Pad the scroll area a touch so the scrollbar (when it does appear)
+   * doesn't visually clip into the formula's descenders. */
+  padding-bottom: 2px;
 }
 
-/* Inline KaTeX shouldn't blow out a narrow column either — give it a tiny
- * top/bottom padding so a tall fraction doesn't clip when it scrolls. */
+/* Inline KaTeX flows like text — no scrollbar of its own. The textbook
+ * article-level `overflow-x: hidden` clips anything that's accidentally
+ * too wide, and the line wraps before/after the inline formula. */
 .katex {
   max-width: 100%;
+  overflow: visible;
 }
 
-/* The textbook article must also clip — the surrounding flex column gives
- * it a fixed max-width but nested grid/flex children can still push it. */
+/* The textbook article clips horizontal overflow as a safety net so an
+ * outsized fragment (e.g. a stray very-wide inline formula) never pushes
+ * the surrounding column wider than the viewport. Vertical scrolling
+ * happens at the page-level container, not here. */
 .textbook {
   max-width: 100%;
   overflow-x: hidden;
+}
+
+/* Don't render the scrollbar track when no overflow exists. Chrome's
+ * default behaviour can leave a 1-2px ghost slider visible on
+ * inline-blocks that have `overflow-x: auto` but no actual overflow.
+ * Forcing the thumb / track to be invisible at zero scroll length
+ * eliminates the tiny bars that were appearing next to inline formulas. */
+.katex-display::-webkit-scrollbar,
+.katex::-webkit-scrollbar {
+  height: 0;
+  width: 0;
+  background: transparent;
+}
+.katex-display:hover::-webkit-scrollbar,
+.katex-display:focus-within::-webkit-scrollbar {
+  height: 6px;
 }
 
 .overflow-x-auto::-webkit-scrollbar {

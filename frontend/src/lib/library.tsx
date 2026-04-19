@@ -137,17 +137,91 @@ function newBookId(): string {
   return `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// ── Auto-attach Manim videos to imported theorems ─────────────────────────
+// Whenever a freshly-imported PDF section has a heading or theorem title
+// that matches one of these patterns, the Theorem we synthesise gets the
+// corresponding cinematic + an English transcript. The /tts endpoint then
+// translates that transcript into whatever language the student picked, so
+// imported textbooks gain narrated visualisations for free.
+type VideoMatch = {
+  patterns: RegExp[];
+  video: string;
+  transcript: string;
+};
+
+const IMPORTED_VIDEO_MATCHES: VideoMatch[] = [
+  {
+    patterns: [/trapezium\s+rule/i, /trapezoid(?:al)?\s+rule/i],
+    video: "/cache/videos/calc_trapezium.mp4",
+    transcript:
+      "The trapezium rule approximates the area under a curve by stacking trapezoids on top of every strip. Slice the interval from a to b into n equal pieces of width h. Above each strip, draw a trapezoid whose top connects f at the left endpoint to f at the right endpoint. The trapezoid's area is h over two times the sum of those two heights. Add the n trapezoid areas up — that's your approximation. Notice that every interior sample point appears in two trapezoids, which is why the formula multiplies them by two while the two endpoints are counted just once.",
+  },
+  {
+    patterns: [/simpson'?s\s+rule/i, /simpson(?!\s+iden)/i],
+    video: "/cache/videos/calc_simpson.mp4",
+    transcript:
+      "Simpson's rule does better than the trapezium rule by fitting a parabola — not a straight line — over every pair of strips. Take three consecutive sample points: f at x zero, f at x one, f at x two. There's a unique parabola through them, and we can integrate that parabola exactly. The formula combines the three heights with weights 1, 4, 1 and multiplies by h over three. Tile this across all the strip-pairs and you get the full Simpson's rule, with weights one, four, two, four, two, dot dot dot, four, one. Because parabolas hug a smooth curve much more tightly than a straight line, Simpson is dramatically more accurate than the trapezium rule for the same n.",
+  },
+  {
+    patterns: [
+      /improper\s+integral.*type\s*1\b/i,
+      /improper\s+integral.*type\s*i\b/i,
+      /improper\s+integral.*infinite\s+limit/i,
+      /infinite\s+limit.*integral/i,
+      /\btype\s*1.*improper/i,
+    ],
+    video: "/cache/videos/calc_improper_inf.mp4",
+    transcript:
+      "An improper integral of type one has an infinite limit — for example, the integral of one over x squared from one out to infinity. Infinity isn't a number you can plug in, so we replace it with a variable t and compute the ordinary integral from one to t. That answer is one minus one over t. Now we let t grow without bound and watch what the area does. As t goes to infinity, one over t shrinks to zero, so the area approaches one. The integral converges, and we say its value is one. If the limit had blown up, we'd say the integral diverges instead.",
+  },
+  {
+    patterns: [
+      /improper\s+integral.*type\s*2\b/i,
+      /improper\s+integral.*type\s*ii\b/i,
+      /improper\s+integral.*vertical\s+asymptot/i,
+      /vertical\s+asymptot.*integral/i,
+      /\btype\s*2.*improper/i,
+      /\btype\s*ii.*improper/i,
+    ],
+    video: "/cache/videos/calc_improper_vert.mp4",
+    transcript:
+      "An improper integral of type two has a vertical asymptote inside or at the edge of its interval — for example, one over root x on the interval from zero to one. The function blows up at zero, so we can't just plug zero in. Instead, replace the trouble end with a variable t and compute the ordinary integral from t to one. That answer is two minus two times root t. Now slide t toward zero from the right and watch the area. Two times root t shrinks to zero, so the area approaches two. Even though the curve goes to infinity at the left edge, the area underneath stays finite — the integral converges to two.",
+  },
+  {
+    patterns: [
+      /comparison\s+test/i,
+      /comparison\s+theorem/i,
+      /direct\s+comparison/i,
+    ],
+    video: "/cache/videos/calc_comparison.mp4",
+    transcript:
+      "The comparison test lets you decide whether an improper integral converges without computing it. Suppose you have two non-negative functions f and g, with f always less than or equal to g. Then the area under f is sandwiched under the area under g. So if g's improper integral converges to a finite value, f's must also converge — it can't be bigger than something finite. The contrapositive is just as useful: if f's integral diverges, then g's must diverge too, because g sits on top of something already infinite. Pick a g you already know about and you can settle f without doing any new integration.",
+  },
+];
+
+function findImportedVideo(text: string): VideoMatch | null {
+  for (const m of IMPORTED_VIDEO_MATCHES) {
+    if (m.patterns.some((p) => p.test(text))) return m;
+  }
+  return null;
+}
+
 function chaptersToTheorems(t: ImportedTextbook | null): Theorem[] {
   if (!t) return [];
   const out: Theorem[] = [];
   for (const ch of t.chapters) {
     for (const s of ch.sections) {
+      // Match against the section heading + the theorem title combined,
+      // so either "7.1 Improper Integrals…" or just the title alone hits.
+      const matchText = `${s.heading} ${s.theorem.title}`;
+      const match = findImportedVideo(matchText);
       out.push({
         id: s.theorem.id,
         title: s.theorem.title || s.heading,
         statement: s.theorem.statement,
         context: s.theorem.context,
-        transcript: {},
+        transcript: match ? { en: match.transcript } : {},
+        cinematic: match ? { video: match.video } : undefined,
       });
     }
   }
