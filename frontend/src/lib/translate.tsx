@@ -10,18 +10,46 @@ import {
 } from "react";
 import { useLang } from "./lang";
 import type { Lang } from "../types";
+// Built at dev/build time by `python scripts/preload_translations.py`.
+// Maps each non-English language code → { englishString: translatedString }.
+// We hydrate the per-language cache from this on first load so language
+// switches feel instant (no /translate round-trip, no Claude wait).
+import preloaded from "../preloaded-translations.json";
+
+// When `scope === "popup"` is active, only components rendered inside this
+// context get their strings translated. Wrap the on-tap panel in
+// <PopupTranslationScope> so its strings flow through useT() while the
+// surrounding textbook stays in English.
+const PopupCtx = createContext<boolean>(false);
+
+export function PopupTranslationScope({ children }: { children: ReactNode }) {
+  return <PopupCtx.Provider value={true}>{children}</PopupCtx.Provider>;
+}
 
 // Per-language in-memory cache. Persisted to localStorage so that switching
 // back to a language we've already used is instant on page reload.
 type Cache = Map<string, string>;
 const caches: Partial<Record<Lang, Cache>> = {};
 
-// v2 = math-masking added on the backend; old cached strings may be broken.
-const STORAGE_PREFIX = "shape.tx2.";
+// v3 = XML-style sentinels + permissive restore; previous caches contained
+// broken `[M0]`-style mangled fragments and need to be discarded.
+const STORAGE_PREFIX = "shape.tx3.";
+
+const PRELOADED = preloaded as Record<string, Record<string, string>>;
 
 function loadCache(lang: Lang): Cache {
   if (caches[lang]) return caches[lang]!;
   const map: Cache = new Map();
+  // 1) Seed from the build-time JSON bundle. These are the slow-to-fetch
+  //    Claude translations, baked in so the first render after a language
+  //    switch already has them in memory.
+  const bundled = PRELOADED[lang];
+  if (bundled) {
+    for (const [k, v] of Object.entries(bundled)) map.set(k, v);
+  }
+  // 2) Layer any per-browser localStorage entries on top — these come from
+  //    runtime /translate calls for strings that weren't in the bundle yet
+  //    (e.g. a chat reply or a newly-added theorem).
   try {
     const raw = window.localStorage.getItem(STORAGE_PREFIX + lang);
     if (raw) {
@@ -150,13 +178,20 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
 
 // Hook: returns the translated version of `text` for the current language,
 // or the original text while the translation is in flight (or if it failed).
+//
+// Honours the active scope:
+//   - scope === "full"  → translate everywhere
+//   - scope === "popup" → translate only inside <PopupTranslationScope>;
+//                         everything outside renders the English source
 export function useTranslated(text: string): string {
   const ctx = useContext(TranslationCtx);
-  const { lang } = useLang();
+  const { lang, scope } = useLang();
+  const inPopup = useContext(PopupCtx);
   if (!ctx) return text;
   // Touching version subscribes this component to translation-batch arrivals.
   void ctx.version;
   if (lang === "en") return text;
+  if (scope === "popup" && !inPopup) return text;
   const cached = ctx.get(text);
   if (cached !== null) return cached;
   // Defer the register so we never trigger a state update during render.

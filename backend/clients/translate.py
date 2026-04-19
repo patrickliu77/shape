@@ -38,12 +38,23 @@ LANG_NAMES = {
 # Trusting Claude to "preserve LaTeX" was unreliable: it would re-escape
 # backslashes, drop $-delimiters, or paraphrase variable names. Instead we
 # strip every math fragment out before translation, replace it with an opaque
-# sentinel, and splice the original back in afterwards. The sentinel uses
-# brackets that no natural language uses so Claude treats it as a literal token.
+# XML-like sentinel, and splice the original back in afterwards. XML tags are
+# the format Claude is most reliable at preserving verbatim.
 _MATH_RE = re.compile(
     r"(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^$\n]+?\$|\\\([^)]*?\\\))"
 )
-_SENTINEL_RE = re.compile(r"⟦M(\d+)⟧")
+
+# Permissive matcher: accepts the canonical `<m0/>` form Claude SHOULD return,
+# plus the common corruptions we've seen in the wild — surrounding markdown
+# bold (`**<m0/>**`), CJK / square brackets (`【m0】`, `[m0]`), markdown bold
+# inside (`[**m0**]`), missing slash, extra spaces.
+_SENTINEL_RE = re.compile(
+    r"\*{0,2}"
+    r"(?:<\s*\*{0,2}\s*m\s*(\d+)\s*\*{0,2}\s*/?\s*>"
+    r"|[\[⟦【「]\s*\*{0,2}\s*m\s*(\d+)\s*\*{0,2}\s*[\]⟧】」])"
+    r"\*{0,2}",
+    re.IGNORECASE,
+)
 
 
 def _mask_math(text: str) -> tuple[str, list[str]]:
@@ -51,14 +62,15 @@ def _mask_math(text: str) -> tuple[str, list[str]]:
 
     def sub(m: re.Match[str]) -> str:
         fragments.append(m.group(0))
-        return f"⟦M{len(fragments) - 1}⟧"
+        return f"<m{len(fragments) - 1}/>"
 
     return _MATH_RE.sub(sub, text), fragments
 
 
 def _restore_math(text: str, fragments: list[str]) -> str:
     def sub(m: re.Match[str]) -> str:
-        idx = int(m.group(1))
+        idx_str = m.group(1) or m.group(2)
+        idx = int(idx_str)
         return fragments[idx] if 0 <= idx < len(fragments) else m.group(0)
 
     return _SENTINEL_RE.sub(sub, text)
@@ -137,14 +149,18 @@ def _claude_translate(text: str, target_lang: str) -> str:
     target_name = LANG_NAMES.get(target_lang, target_lang)
     system = (
         f"You translate English into {target_name}. The input may contain "
-        f"sentinels like ⟦M0⟧, ⟦M1⟧, ⟦M2⟧ — these are placeholders for math "
-        f"expressions and you MUST keep them EXACTLY, character for "
-        f"character, in your output. Do not translate them, do not add or "
-        f"remove brackets, do not change the digits inside. Translate only "
+        f"opaque XML tokens like <m0/>, <m1/>, <m2/> — these are placeholders "
+        f"for math expressions and you MUST keep them EXACTLY in your "
+        f"output, identical to how they appeared in the input: same casing, "
+        f"same digits, same `<` and `/>` characters. Do NOT wrap them in "
+        f"markdown, do NOT replace `<>` with `[]`, do NOT add extra "
+        f"asterisks. Treat them as immutable code tokens. Translate only "
         f"the surrounding prose. Use a warm, patient, older-sibling "
-        f"tutoring register suitable for a teenage student. Reply with "
-        f"ONLY the translation — no preamble, no quotation marks, no "
-        f"explanation."
+        f"tutoring register suitable for a teenage student. Match the "
+        f"length of the English source closely — do not pad, expand, or "
+        f"add extra phrases; the result will be slotted into a tight UI "
+        f"that mirrors the English layout. Reply with ONLY the translation "
+        f"— no preamble, no quotation marks, no explanation, no markdown."
     )
     resp = client.messages.create(
         model="claude-sonnet-4-6",
@@ -209,10 +225,13 @@ def translate_batch(texts: list[str], target_lang: str) -> list[str]:
                     f"EXACTLY by the line `[[~~SEP~~]]`. Translate each "
                     f"fragment and emit them back in the same order with the "
                     f"same `[[~~SEP~~]]` separator. No preamble, no quotes, "
-                    f"no extra text. Sentinels like ⟦M0⟧, ⟦M1⟧ are math "
-                    f"placeholders — preserve them EXACTLY, character for "
-                    f"character. Use a warm, patient older-sibling tutoring "
-                    f"register."
+                    f"no extra text, no markdown. Opaque XML tokens like "
+                    f"<m0/>, <m1/> are math placeholders — preserve them "
+                    f"EXACTLY, identical characters, no wrapping in markdown "
+                    f"or bracket changes. Match the length of each English "
+                    f"source closely — do not pad or expand; the results "
+                    f"slot into a tight UI that mirrors the English layout. "
+                    f"Use a warm, patient older-sibling tutoring register."
                 )
                 resp = client.messages.create(
                     model="claude-sonnet-4-6",
@@ -249,8 +268,16 @@ def translate_batch(texts: list[str], target_lang: str) -> list[str]:
                         except Exception:  # noqa: BLE001
                             pass
             except Exception as e:  # noqa: BLE001
-                print(f"[translate_batch] {target_lang} fallback: {e}")
+                print(
+                    f"[translate_batch] {target_lang} batched call failed "
+                    f"({e}); falling back to per-item translate()."
+                )
+                # Per-item fallback — slower but more robust to long inputs
+                # or low-resource languages where Claude fragments unevenly.
                 for i, t in zip(missing_idx, missing_text):
-                    out[i] = t
+                    try:
+                        out[i] = translate(t, target_lang)
+                    except Exception:  # noqa: BLE001
+                        out[i] = t
 
     return [o or "" for o in out]

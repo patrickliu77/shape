@@ -1,6 +1,7 @@
 import type { Theorem } from "../types";
 import { TheoremBlock } from "./TheoremBlock";
 import { FormalDefinition } from "./FormalDefinition";
+import { useT } from "../lib/translate";
 
 type Props = {
   theorems: Theorem[];
@@ -229,59 +230,113 @@ const CHAPTERS: ChapterDef[] = [
   },
 ];
 
+function ChapterView({
+  ch,
+  firstChapter,
+  theorems,
+  activeId,
+  onSelect,
+}: {
+  ch: ChapterDef;
+  firstChapter: boolean;
+  theorems: Theorem[];
+  activeId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  // In `popup` scope these calls return the English original; in `full`
+  // scope they fetch translations from the language filter.
+  const tTitle = useT(ch.title);
+  const tBlurb = useT(ch.blurb);
+  const tChapterWord = useT("Chapter");
+  return (
+    <div>
+      <header
+        className={
+          firstChapter
+            ? "mb-10 border-b border-stone-300 dark:border-stone-700 pb-6"
+            : "mt-16 mb-10 border-b border-stone-300 dark:border-stone-700 pb-6"
+        }
+      >
+        <div className="text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2">
+          {tChapterWord} {ch.number}
+        </div>
+        <h1 className="text-4xl font-semibold text-ink dark:text-stone-100 mb-2">
+          {tTitle}
+        </h1>
+        <p className="text-stone-600 dark:text-stone-400 italic">{tBlurb}</p>
+      </header>
+
+      <section className="space-y-2">
+        {ch.sections.map((s, si) => {
+          const th = theorems[s.theoremIndex];
+          return (
+            <SectionView
+              key={s.heading}
+              section={s}
+              firstSection={si === 0}
+              theorem={th}
+              active={activeId === th.id}
+              onSelect={onSelect}
+            />
+          );
+        })}
+      </section>
+    </div>
+  );
+}
+
+function SectionView({
+  section,
+  firstSection,
+  theorem,
+  active,
+  onSelect,
+}: {
+  section: Section;
+  firstSection: boolean;
+  theorem: Theorem;
+  active: boolean;
+  onSelect: (id: string) => void;
+}) {
+  const tHeading = useT(section.heading);
+  return (
+    <div>
+      <h2
+        className={
+          firstSection
+            ? "text-2xl font-semibold mt-8 mb-3"
+            : "text-2xl font-semibold mt-10 mb-3"
+        }
+      >
+        {tHeading}
+      </h2>
+      <FormalDefinition
+        kind={section.formal.kind}
+        name={section.formal.name}
+        body={section.formal.body}
+      />
+      <TheoremBlock
+        theorem={theorem}
+        introText={section.intro}
+        onTap={() => onSelect(theorem.id)}
+        active={active}
+      />
+    </div>
+  );
+}
+
 export function Textbook({ theorems, activeId, onSelect }: Props) {
   return (
     <article className="textbook max-w-2xl mx-auto px-10 py-12 bg-paper dark:bg-[#1a1726] dark:text-stone-200 shadow-sm rounded-md my-6 transition-colors">
       {CHAPTERS.map((ch, ci) => (
-        <div key={ch.number}>
-          <header
-            className={
-              ci === 0
-                ? "mb-10 border-b border-stone-300 dark:border-stone-700 pb-6"
-                : "mt-16 mb-10 border-b border-stone-300 dark:border-stone-700 pb-6"
-            }
-          >
-            <div className="text-xs uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-2">
-              Chapter {ch.number}
-            </div>
-            <h1 className="text-4xl font-semibold text-ink dark:text-stone-100 mb-2">
-              {ch.title}
-            </h1>
-            <p className="text-stone-600 dark:text-stone-400 italic">
-              {ch.blurb}
-            </p>
-          </header>
-
-          <section className="space-y-2">
-            {ch.sections.map((s, si) => {
-              const th = theorems[s.theoremIndex];
-              return (
-                <div key={s.heading}>
-                  <h2
-                    className={
-                      si === 0
-                        ? "text-2xl font-semibold mt-8 mb-3"
-                        : "text-2xl font-semibold mt-10 mb-3"
-                    }
-                  >
-                    {s.heading}
-                  </h2>
-                  <FormalDefinition
-                    kind={s.formal.kind}
-                    name={s.formal.name}
-                    body={s.formal.body}
-                  />
-                  <TheoremBlock
-                    theorem={th}
-                    introText={s.intro}
-                    onTap={() => onSelect(th.id)}
-                    active={activeId === th.id}
-                  />
-                </div>
-              );
-            })}
-          </section>
-        </div>
+        <ChapterView
+          key={ch.number}
+          ch={ch}
+          firstChapter={ci === 0}
+          theorems={theorems}
+          activeId={activeId}
+          onSelect={onSelect}
+        />
       ))}
     </article>
   );

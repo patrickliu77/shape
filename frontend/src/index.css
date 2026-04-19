@@ -38,18 +38,39 @@ body,
   height: 100%;
 }
 
+/* Unified font stacks. The browser falls back to the right script-specific
+ * face automatically while keeping a consistent visual weight across
+ * languages — Latin / Arabic / Devanagari / CJK / Cyrillic all render on
+ * the same baseline so the textbook layout stays steady when the user
+ * switches from English to Japanese or Hindi. */
 body {
   margin: 0;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: "Inter", "Noto Sans", "Noto Sans Arabic", "Noto Sans Devanagari",
+    "Noto Sans JP", "Noto Sans SC", system-ui, -apple-system,
+    "Segoe UI", "Helvetica Neue", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
   background: var(--bg-app);
   color: var(--text-strong);
   transition: background-color 200ms ease, color 200ms ease;
 }
 
 .textbook {
-  font-family: "Crimson Pro", Georgia, serif;
+  font-family: "Crimson Pro", "Noto Serif", "Noto Serif JP",
+    "Noto Naskh Arabic", Georgia, serif;
   font-size: 1.075rem;
   line-height: 1.7;
+}
+
+/* Force consistent line-height & word-break across languages so a long
+ * Hindi/Japanese phrase doesn't blow out a box that was tuned for English. */
+.textbook,
+.textbook p,
+.textbook h1,
+.textbook h2,
+.textbook li {
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* Force the textbook article to use the themed surface (bg-paper kept for

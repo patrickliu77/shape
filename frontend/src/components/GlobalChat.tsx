@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ask, type AskStep } from "../lib/api";
 import { useLang } from "../lib/lang";
 import { useT } from "../lib/translate";
@@ -150,19 +150,112 @@ export function GlobalChat({ onOpenTheorem }: Props) {
     }
   }, [open]);
 
+  // ── Draggable bottom bar ─────────────────────────────────────────────
+  // The user can grab anywhere on the bar (except the input/button) and
+  // reposition it. Position is persisted to localStorage so it survives
+  // reloads. A small grip icon on the left signals the affordance.
+  const POS_KEY = "shape.chatPos";
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const raw = window.localStorage.getItem(POS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
+          return parsed;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    return { x: 0, y: 0 };
+  });
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    offsetX: number;
+    offsetY: number;
+  } | null>(null);
+
+  const persistPos = useCallback((next: { x: number; y: number }) => {
+    try {
+      window.localStorage.setItem(POS_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const onDragPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Let clicks on inputs/buttons keep their normal behaviour.
+    if ((e.target as HTMLElement).closest("input, button, textarea, a")) {
+      return;
+    }
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: pos.x,
+      offsetY: pos.y,
+    };
+  };
+  const onDragPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    const { startX, startY, offsetX, offsetY } = dragRef.current;
+    setPos({
+      x: offsetX + (e.clientX - startX),
+      y: offsetY + (e.clientY - startY),
+    });
+  };
+  const onDragPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    persistPos(pos);
+  };
+
   return (
     <>
       {/* Sticky bottom bar — always visible. Click or focus expands the
-          conversation overlay above. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 px-3 sm:px-6 pb-3 sm:pb-4 pointer-events-none">
-        <div className="max-w-3xl mx-auto pointer-events-auto">
+          conversation overlay above. Drag-anywhere-on-bar (except the input
+          and Ask button) to reposition. */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-30 px-3 sm:px-6 pb-3 sm:pb-4 pointer-events-none"
+        style={{ transform: `translate(${pos.x}px, ${pos.y}px)` }}
+      >
+        <div
+          className="max-w-3xl mx-auto pointer-events-auto"
+          onPointerDown={onDragPointerDown}
+          onPointerMove={onDragPointerMove}
+          onPointerUp={onDragPointerUp}
+          onPointerCancel={onDragPointerUp}
+          style={{ touchAction: "none" }}
+        >
           <form
             onSubmit={(e) => {
               e.preventDefault();
               submit();
             }}
-            className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/95 dark:bg-[#15121f]/95 backdrop-blur border border-stone-200 dark:border-[#2d2740] shadow-lg"
+            className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/95 dark:bg-[#15121f]/95 backdrop-blur border border-stone-200 dark:border-[#2d2740] shadow-lg cursor-grab active:cursor-grabbing"
           >
+            {/* Drag grip — also acts as a visual cue that the bar is movable. */}
+            <span
+              className="pl-0.5 text-stone-400 dark:text-stone-500 select-none"
+              aria-hidden
+              title="Drag to move"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="9" cy="6" r="1.6" />
+                <circle cx="15" cy="6" r="1.6" />
+                <circle cx="9" cy="12" r="1.6" />
+                <circle cx="15" cy="12" r="1.6" />
+                <circle cx="9" cy="18" r="1.6" />
+                <circle cx="15" cy="18" r="1.6" />
+              </svg>
+            </span>
             <span className="pl-1 text-violet-500 dark:text-violet-300" aria-hidden>
               {/* spark icon */}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 4.8L18 8l-4.4 1.2L12 14l-1.6-4.8L6 8l4.4-1.2L12 2zm7 10l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3zM5 14l.8 2.4L8 17l-2.2.6L5 20l-.8-2.4L2 17l2.2-.6L5 14z"/></svg>
@@ -173,7 +266,7 @@ export function GlobalChat({ onOpenTheorem }: Props) {
               onFocus={() => messages.length > 0 && setOpen(true)}
               placeholder={t.placeholder}
               dir={dir}
-              className="flex-1 px-2 py-1 bg-transparent text-sm focus:outline-none text-ink dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500"
+              className="flex-1 px-2 py-1 bg-transparent text-sm focus:outline-none text-ink dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-500 cursor-text"
               aria-label={t.placeholder}
             />
             <button

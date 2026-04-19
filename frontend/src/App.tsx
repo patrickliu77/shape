@@ -4,8 +4,8 @@ import { ExplainPanel } from "./components/ExplainPanel";
 import { Logo } from "./components/Logo";
 import { GlobalChat } from "./components/GlobalChat";
 import { theorems, theoremById } from "./theorems-data";
-import { LangProvider, useLang, LANG_LABEL, SUPPORTED } from "./lib/lang";
-import { TranslationProvider } from "./lib/translate";
+import { LangProvider, useLang, LANG_LABEL, SUPPORTED, SCOPES } from "./lib/lang";
+import { TranslationProvider, PopupTranslationScope } from "./lib/translate";
 import { useMediaQuery } from "./lib/use-media-query";
 import { ThemeToggle } from "./lib/theme";
 
@@ -23,21 +23,44 @@ function readPanelWidth(): number {
   return PANEL_DEFAULT;
 }
 
+const SCOPE_LABEL: Record<(typeof SCOPES)[number], string> = {
+  full: "Full page",
+  popup: "Popup only",
+};
+
 function LangSwitcher() {
-  const { lang, setLang } = useLang();
+  const { lang, setLang, scope, setScope } = useLang();
   return (
-    <select
-      value={lang}
-      onChange={(e) => setLang(e.target.value as typeof lang)}
-      className="text-xs font-medium rounded-full bg-stone-100 dark:bg-stone-800 px-3 py-1.5 text-ink dark:text-stone-100 border border-transparent hover:border-stone-300 dark:hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
-      aria-label="Language"
-    >
-      {SUPPORTED_LANGS.map((l) => (
-        <option key={l} value={l} className="bg-white dark:bg-stone-800 text-ink dark:text-stone-100">
-          {LANG_LABEL[l]}
-        </option>
-      ))}
-    </select>
+    <div className="flex items-center gap-1.5">
+      <select
+        value={lang}
+        onChange={(e) => setLang(e.target.value as typeof lang)}
+        className="text-xs font-medium rounded-full bg-stone-100 dark:bg-stone-800 px-3 py-1.5 text-ink dark:text-stone-100 border border-transparent hover:border-stone-300 dark:hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
+        aria-label="Language"
+      >
+        {SUPPORTED_LANGS.map((l) => (
+          <option key={l} value={l} className="bg-white dark:bg-stone-800 text-ink dark:text-stone-100">
+            {LANG_LABEL[l]}
+          </option>
+        ))}
+      </select>
+      {/* Scope only matters when a non-English language is picked. */}
+      {lang !== "en" && (
+        <select
+          value={scope}
+          onChange={(e) => setScope(e.target.value as typeof scope)}
+          className="text-xs font-medium rounded-full bg-stone-100 dark:bg-stone-800 px-3 py-1.5 text-ink dark:text-stone-100 border border-transparent hover:border-stone-300 dark:hover:border-stone-600 focus:outline-none focus:ring-2 focus:ring-accent cursor-pointer"
+          aria-label="Translation scope"
+          title="Full page = translate the whole textbook. Popup only = translate just the panel that opens when you tap a theorem."
+        >
+          {SCOPES.map((s) => (
+            <option key={s} value={s} className="bg-white dark:bg-stone-800 text-ink dark:text-stone-100">
+              {SCOPE_LABEL[s]}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
   );
 }
 
@@ -139,7 +162,9 @@ function Shell() {
               className="shrink-0 overflow-hidden bg-white dark:bg-[#15121f]"
               style={{ width: `${panelWidth}px` }}
             >
-              <ExplainPanel theorem={active} onClose={close} />
+              <PopupTranslationScope>
+                <ExplainPanel theorem={active} onClose={close} />
+              </PopupTranslationScope>
             </div>
           </>
         ) : (
@@ -162,7 +187,9 @@ function Shell() {
                   <div className="w-10 h-1 rounded-full bg-stone-300 dark:bg-stone-600" />
                 </div>
                 <div className="flex-1 min-h-0 overflow-hidden">
-                  <ExplainPanel theorem={active} onClose={close} />
+                  <PopupTranslationScope>
+                <ExplainPanel theorem={active} onClose={close} />
+              </PopupTranslationScope>
                 </div>
               </div>
             </div>

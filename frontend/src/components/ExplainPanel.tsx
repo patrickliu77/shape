@@ -162,7 +162,7 @@ export function ExplainPanel({ theorem, onClose }: Props) {
             {useT(MODE_LABEL_EN[mode])}
           </div>
           <h2 className="text-lg font-semibold text-ink dark:text-stone-100 leading-tight">
-            <MathText>{theorem.title}</MathText>
+            <MathText>{useT(theorem.title)}</MathText>
           </h2>
         </div>
         <button
