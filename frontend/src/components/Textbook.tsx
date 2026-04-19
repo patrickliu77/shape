@@ -2,6 +2,7 @@ import type { Theorem } from "../types";
 import { TheoremBlock } from "./TheoremBlock";
 import { FormalDefinition } from "./FormalDefinition";
 import { useT } from "../lib/translate";
+import { useImportedTextbook } from "../lib/imported";
 
 type Props = {
   theorems: Theorem[];
@@ -326,6 +327,54 @@ function SectionView({
 }
 
 export function Textbook({ theorems, activeId, onSelect }: Props) {
+  // When the user has imported a PDF, that takes over: we stitch the
+  // imported chapters into the same {chapters → sections → theoremIndex}
+  // shape and render through the same ChapterView/SectionView code.
+  const { imported, importedTheorems } = useImportedTextbook();
+
+  if (imported) {
+    // Build a Theorem[] indexed by the section's theorem id so the existing
+    // SectionView code (which looks up by theoremIndex) keeps working.
+    const usedTheorems = importedTheorems;
+    const idToIndex = new Map(usedTheorems.map((t, i) => [t.id, i]));
+
+    const importedChapters: ChapterDef[] = imported.chapters.map((ch) => ({
+      number: ch.number,
+      title: ch.title,
+      blurb: ch.blurb,
+      sections: ch.sections.map((s) => ({
+        heading: s.heading,
+        formal: {
+          kind: s.formal.kind,
+          name: s.formal.name ?? undefined,
+          body: s.formal.body,
+        },
+        intro: s.intro,
+        theoremIndex: idToIndex.get(s.theorem.id) ?? 0,
+      })),
+    }));
+
+    return (
+      <article className="textbook max-w-2xl mx-auto px-10 py-12 bg-paper dark:bg-[#1a1726] dark:text-stone-200 shadow-sm rounded-md my-6 transition-colors">
+        {imported.source && (
+          <div className="text-[10px] uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 mb-6 font-sans">
+            Imported from <span className="text-accent dark:text-violet-300">{imported.source}</span>
+          </div>
+        )}
+        {importedChapters.map((ch, ci) => (
+          <ChapterView
+            key={ch.number}
+            ch={ch}
+            firstChapter={ci === 0}
+            theorems={usedTheorems}
+            activeId={activeId}
+            onSelect={onSelect}
+          />
+        ))}
+      </article>
+    );
+  }
+
   return (
     <article className="textbook max-w-2xl mx-auto px-10 py-12 bg-paper dark:bg-[#1a1726] dark:text-stone-200 shadow-sm rounded-md my-6 transition-colors">
       {CHAPTERS.map((ch, ci) => (

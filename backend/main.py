@@ -17,14 +17,14 @@ from pathlib import Path
 from typing import List, Literal, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 load_dotenv()
 
-from clients import ask as ask_client, inception, k2, llm, mercury, prewarm, translate, tts  # noqa: E402
+from clients import ask as ask_client, inception, k2, llm, mercury, pdf_import, prewarm, translate, tts  # noqa: E402
 
 app = FastAPI(title="Sparkle")
 
@@ -250,6 +250,27 @@ class TranslateRequest(BaseModel):
 
 class TranslateResponse(BaseModel):
     translated: List[str]
+
+
+@app.post("/import-pdf")
+async def import_pdf(file: UploadFile = File(...)):
+    """Accept a PDF upload, return a structured chapters/sections JSON
+    that the frontend can render in place of the default textbook."""
+    if not (file.filename or "").lower().endswith(".pdf"):
+        raise HTTPException(400, "expected a .pdf file")
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(400, "empty upload")
+    try:
+        text = pdf_import.extract_pdf_text(raw)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(400, f"could not read PDF: {e}")
+    if not text.strip():
+        raise HTTPException(400, "no extractable text in this PDF")
+    try:
+        return pdf_import.parse_pdf_to_chapters(text)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(500, f"failed to structure PDF: {e}")
 
 
 @app.post("/translate", response_model=TranslateResponse)

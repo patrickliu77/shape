@@ -57,7 +57,8 @@ const MODE_LABEL_EN: Record<
   | "cinematic+interactive"
   | "cinematic+3d"
   | "interactive+3d"
-  | "all",
+  | "all"
+  | "text",
   string
 > = {
   cinematic: "Animated",
@@ -67,6 +68,7 @@ const MODE_LABEL_EN: Record<
   "cinematic+3d": "Animated · 3D",
   "interactive+3d": "Interactive · 3D",
   all: "Animated · Interactive · 3D",
+  text: "Imported",
 };
 
 const STR = {
@@ -187,6 +189,18 @@ export function ExplainPanel({ theorem, onClose }: Props) {
         )}
         {theorem.interactive && (
           <InteractiveView spec={theorem.interactive} transcript={transcript} />
+        )}
+        {/* Imported PDF theorems have no media — surface the friendlier
+            explanation directly so the popup isn't just the formal box. */}
+        {mode === "text" && theorem.context && (
+          <div className="bg-violet-50 dark:bg-violet-900/20 border-l-4 border-accent dark:border-violet-400 px-4 py-3 rounded-r">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-accent dark:text-violet-300 font-semibold mb-1">
+              {useT("Simpler explanation")}
+            </div>
+            <p className="text-stone-700 dark:text-stone-200 leading-relaxed">
+              <MathText>{useT(theorem.context)}</MathText>
+            </p>
+          </div>
         )}
 
         <details className="text-sm text-stone-600 dark:text-stone-300">

@@ -67,7 +67,8 @@ export type TheoremMode =
   | "cinematic+interactive"
   | "cinematic+3d"
   | "interactive+3d"
-  | "all";
+  | "all"
+  | "text";
 
 export function theoremMode(t: Theorem): TheoremMode {
   const c = !!t.cinematic;
@@ -79,5 +80,8 @@ export function theoremMode(t: Theorem): TheoremMode {
   if (i && i3) return "interactive+3d";
   if (c) return "cinematic";
   if (i3) return "interactive3d";
-  return "interactive";
+  if (i) return "interactive";
+  // No media at all — used for imported PDF theorems where the popup just
+  // shows the formal statement and a friendlier explanation.
+  return "text";
 }

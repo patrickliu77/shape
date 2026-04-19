@@ -27,6 +27,9 @@ const BADGE_EN: Record<TheoremMode, string> = {
   "cinematic+3d": "Animated · 3D · simpler explanation",
   "interactive+3d": "Interactive · 3D · simpler explanation",
   all: "Animated · Interactive · 3D · simpler explanation",
+  // Imported PDF theorems have no rendered media — the popup just shows
+  // the formal statement and a friendlier explanation.
+  text: "Imported · simpler explanation",
 };
 
 export function TheoremBlock({

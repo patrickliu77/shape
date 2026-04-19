@@ -3,9 +3,11 @@ import { Textbook } from "./components/Textbook";
 import { ExplainPanel } from "./components/ExplainPanel";
 import { Logo } from "./components/Logo";
 import { GlobalChat } from "./components/GlobalChat";
+import { ImportPdfButton } from "./components/ImportPdfButton";
 import { theorems, theoremById } from "./theorems-data";
 import { LangProvider, useLang, LANG_LABEL, SUPPORTED, SCOPES } from "./lib/lang";
 import { TranslationProvider, PopupTranslationScope } from "./lib/translate";
+import { ImportedTextbookProvider, useImportedTextbook } from "./lib/imported";
 import { useMediaQuery } from "./lib/use-media-query";
 import { ThemeToggle } from "./lib/theme";
 
@@ -66,7 +68,13 @@ function LangSwitcher() {
 
 function Shell() {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const active = activeId ? theoremById(activeId) ?? null : null;
+  const { importedTheorems, imported } = useImportedTextbook();
+  // When a PDF is imported, theorem lookups go against its derived theorems.
+  // Otherwise we use the built-in textbook.
+  const activeTheorems = imported ? importedTheorems : theorems;
+  const active = activeId
+    ? activeTheorems.find((t) => t.id === activeId) ?? theoremById(activeId) ?? null
+    : null;
   const close = () => setActiveId(null);
 
   // Tailwind 'md' = 768px. We render exactly one ExplainPanel (with its own
@@ -127,6 +135,7 @@ function Shell() {
           <span className="hidden md:inline text-xs text-stone-500 dark:text-stone-400 mr-2">
             Tap any theorem to see it move.
           </span>
+          <ImportPdfButton />
           <LangSwitcher />
           <ThemeToggle />
         </div>
@@ -135,7 +144,7 @@ function Shell() {
       <main className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 min-w-0 overflow-y-auto pb-24">
           <Textbook
-            theorems={theorems}
+            theorems={activeTheorems}
             activeId={activeId}
             onSelect={setActiveId}
           />
@@ -208,7 +217,9 @@ export default function App() {
   return (
     <LangProvider>
       <TranslationProvider>
-        <Shell />
+        <ImportedTextbookProvider>
+          <Shell />
+        </ImportedTextbookProvider>
       </TranslationProvider>
     </LangProvider>
   );
