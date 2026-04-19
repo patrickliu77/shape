@@ -1,10 +1,10 @@
 # Shape
 
-> *Tap any theorem in your textbook. Get an interactive visualization and a voice explanation in your native language.*
+> *Shaping the minds of tomorrow today*
 
 An AI-native interactive textbook built at HackPrinceton 2026. The student opens a digital page (built-in or imported PDF), taps a formal definition, and a popup unfolds with a Manim animation, native-language narration, and a chat that can answer follow-ups. Everything — UI labels, theorem prose, formal definitions, chat replies, narration — translates into one of seven languages on a single click.
 
-> **⚠️ Note: this repository will not run on machines that have not been pre-configured for Shape at this time.** It depends on a specific local toolchain (Manim CE + MiKTeX + uv-managed venvs, FFmpeg via `imageio-ffmpeg`, an Anthropic + Azure Speech key, and a hand-built `manim_scenes/.venv`) plus pre-rendered MP4s and a translation bundle that aren't checked into git. Treat this as a hackathon submission and demo artifact — not a turnkey installable.
+> ** Note: this repository will not run on machines that have not been pre-configured for Shape at this time.** It depends on a specific local toolchain (Manim CE + MiKTeX + uv-managed venvs, FFmpeg via `imageio-ffmpeg`, an Anthropic + Azure Speech key, and a hand-built `manim_scenes/.venv`) plus pre-rendered MP4s and a translation bundle that aren't checked into git. Treat this as a hackathon submission and demo artifact.
 
 ---
 
@@ -171,7 +171,7 @@ Math is preserved across translation by masking `$...$` and `$$...$$` blocks to 
 | Control | What it does |
 |---|---|
 | Logo | Pinned to top-left |
-| 📄 Import PDF | Upload a PDF; new book added to the library |
+| Import PDF | Upload a PDF; new book added to the library |
 | Font (Sans Serif / Serif) | Switches every visible string between Manrope and Crimson Pro |
 | Language (EN / عربي / हिंदी / 中文 / FR / Қазақ / 日本語) | Reload the page in the chosen language |
 | Translation scope (Full page / Popup only) | Translate everything, or just the panel that opens on tap |
