@@ -152,16 +152,35 @@ export function GlobalChat({ onOpenTheorem }: Props) {
 
   // ── Draggable bottom bar ─────────────────────────────────────────────
   // The user can grab anywhere on the bar (except the input/button) and
-  // reposition it. Position is persisted to localStorage so it survives
-  // reloads. A small grip icon on the left signals the affordance.
+  // reposition it. Position is persisted to localStorage and clamped so the
+  // bar can never be moved completely off-screen — at least a chunk of it
+  // always stays inside the viewport, no matter what was dragged or what
+  // was previously saved.
   const POS_KEY = "shape.chatPos";
+
+  // The bar lives at `bottom-0` with bottom padding ~16px and is roughly
+  // 700px wide (max-w-3xl). To keep at least a sliver visible we clamp
+  // translateX so the centre is within the viewport, and translateY so the
+  // bar can't be pushed below the screen or up past the top nav.
+  const clampPos = useCallback((p: { x: number; y: number }) => {
+    if (typeof window === "undefined") return p;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    return {
+      x: Math.max(-w / 2 + 80, Math.min(w / 2 - 80, p.x)),
+      y: Math.max(-h + 120, Math.min(0, p.y)),
+    };
+  }, []);
+
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     try {
       const raw = window.localStorage.getItem(POS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (typeof parsed?.x === "number" && typeof parsed?.y === "number") {
-          return parsed;
+          // Clamp on read in case a previous drag landed off-screen or the
+          // viewport has since shrunk (e.g. window resize, devtools open).
+          return clampPos(parsed);
         }
       }
     } catch {
@@ -169,6 +188,15 @@ export function GlobalChat({ onOpenTheorem }: Props) {
     }
     return { x: 0, y: 0 };
   });
+
+  // If the window is resized while the chat is up, re-clamp so the bar
+  // always stays at least partially on-screen.
+  useEffect(() => {
+    const onResize = () => setPos((p) => clampPos(p));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [clampPos]);
+
   const dragRef = useRef<{
     startX: number;
     startY: number;
@@ -201,10 +229,12 @@ export function GlobalChat({ onOpenTheorem }: Props) {
   const onDragPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current) return;
     const { startX, startY, offsetX, offsetY } = dragRef.current;
-    setPos({
-      x: offsetX + (e.clientX - startX),
-      y: offsetY + (e.clientY - startY),
-    });
+    setPos(
+      clampPos({
+        x: offsetX + (e.clientX - startX),
+        y: offsetY + (e.clientY - startY),
+      }),
+    );
   };
   const onDragPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current) return;
@@ -215,6 +245,15 @@ export function GlobalChat({ onOpenTheorem }: Props) {
       /* ignore */
     }
     persistPos(pos);
+  };
+
+  // Double-click the grip / bar (not on input/button) to snap the chat
+  // back to its default bottom-centre position.
+  const onResetPos = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("input, button, textarea, a")) return;
+    const reset = { x: 0, y: 0 };
+    setPos(reset);
+    persistPos(reset);
   };
 
   return (
@@ -232,6 +271,8 @@ export function GlobalChat({ onOpenTheorem }: Props) {
           onPointerMove={onDragPointerMove}
           onPointerUp={onDragPointerUp}
           onPointerCancel={onDragPointerUp}
+          onDoubleClick={onResetPos}
+          title="Drag to move · double-click to reset position"
           style={{ touchAction: "none" }}
         >
           <form
