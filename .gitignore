@@ -24,3 +24,6 @@ manim_scenes/media/
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude 
+.claude
